@@ -16,7 +16,8 @@ const mat=(color,metalness=.3,roughness=.4)=>new THREE.MeshStandardMaterial({col
 const steel=mat('#7c9390',.65,.35),dark=mat('#344747',.6,.42),edge=mat('#a4b6ad',.7,.3),copper=mat('#c9874e',.78,.28),copper2=mat('#e4ad6b',.7,.32),ceramic=mat('#a9b5a4',.12,.32),paper=mat('#c4aa76',.05,.78),black=mat('#172522',.3,.6),silver=mat('#b8c8c2',.85,.25),blue=mat('#68acb2',.55,.28);
 const groups={},meshes=[],shell=[],guides=[];let explosion=0,mode='solid',selected=null;
 const motion={tank:[0,-.4,2.7],lid:[0,3.5,0],hv:[0,4.3,-.7],lv:[0,3.7,1.2],core:[0,0,0],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,3.8,0],cooling:[0,0,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[1,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[-1,0,3],wti:[1,0,3],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
-parts.forEach(p=>{let g=new THREE.Group();g.userData.id=p.id;g.userData.vector=new THREE.Vector3(...motion[p.id]);groups[p.id]=g;scene.add(g);});
+Object.assign(motion,{"mog":[2,3,-1],"spr":[-2,3,1],"osr":[1,3,-2],"drive":[4,0,1],"selector":[3,2,0],"oltcoil":[4,1,0],"bladder":[0,4,-2],"sample":[2,-1,2],"drain":[-2,-1,2],"neutral":[3,4,1],"headers":[0,0,3],"pumps":[3,-1,3],"coolctrl":[-3,0,3],"terminal":[-3,1,4],"coreearth":[-3,-1,0],"clamps":[0,2,0],"wrings":[0,3,0],"shields":[0,4,0],"lifting":[0,3,2],"plates":[2,0,3]});
+parts.forEach(p=>{let g=new THREE.Group();g.userData.id=p.id;g.userData.vector=new THREE.Vector3(...(motion[p.id]??[0,0,0]));groups[p.id]=g;scene.add(g);});
 function mesh(geo,m,pos,g){const o=new THREE.Mesh(geo,m.clone());o.position.set(...pos);o.castShadow=true;o.receiveShadow=true;g.add(o);o.userData.id=g.userData.id;meshes.push(o);if(['tank','lid'].includes(o.userData.id))shell.push(o);return o;}
 function box(w,h,d,x,y,z,m,g){return mesh(new THREE.BoxGeometry(w,h,d),m,[x,y,z],g);}
 function cyl(r,h,x,y,z,m,g,r2=r){return mesh(new THREE.CylinderGeometry(r2,r,h,40),m,[x,y,z],g);}
@@ -51,6 +52,32 @@ g=groups.ct;ring(.28,.16,.17,-2.1,3.65,.9,dark,g);torus(.28,.018,-2.1,3.7,.9,pap
 for(let x of [-1.5,-.95]){g=x===-1.5?groups.oti:groups.wti;pipe([[x,3.3,1.8],[x,3.7,1.5],[x,4.08,.5]],.012,copper,g);cyl(.055,.16,x,4.07,.5,silver,g);}
 g=groups.valves;for(let x of [-2.7,2.7])for(let side of [-1,1])for(let y of [1.03,3.3]){let f=cyl(.16,.07,x,y,side*1.82,silver,g);f.rotation.x=Math.PI/2;box(.04,.21,.035,x,y+.16,side*1.82,dark,g);}pipe([[2.8,.85,1.57],[2.8,.85,1.98]],.055,steel,g);torus(.11,.018,2.8,1.01,1.93,dark,g);for(let x of [-2.7,2.7])cyl(.035,.1,x,3.45,2.25,copper,g);
 g=groups.earth;for(let x of [-3,3]){box(.19,.12,.06,x,.85,1.7,copper,g);pipe([[x,.85,1.73],[x,.45,1.73],[x,.06,2]],.025,copper,g);}
+
+// Extended component groups: interactive 3D educational geometry (not manufacturer CAD).
+const extraIds=["mog","spr","osr","drive","selector","oltcoil","bladder","sample","drain","neutral","headers","pumps","coolctrl","terminal","coreearth","clamps","wrings","shields","lifting","plates"];
+extraIds.forEach(id=>{if(!groups[id])throw new Error('Missing transformer group: '+id);});
+function accessory(id,x,y,z,r=.12){const g=groups[id];cyl(r,.13,x,y,z,steel,g);cyl(r*.72,.04,x,y+.09,z,blue,g);return g;}
+accessory('mog',2.52,5.65,-1.72,.19);
+accessory('spr',-2.5,3.97,-.2,.16);
+accessory('osr',1.65,5.06,-1.72,.13);
+g=groups.drive;box(.62,.82,.32,3.67,2.2,.6,steel,g);box(.4,.12,.04,3.67,2.42,.78,blue,g);cyl(.13,.25,3.67,1.78,.6,dark,g);
+g=groups.selector;for(let y of [1.55,1.9,2.25,2.6,2.95]){torus(.26,.025,2.72,y,0,copper,g);box(.35,.045,.06,2.72,y,.25,silver,g);}
+g=groups.oltcoil;cyl(.42,2.35,2.72,2.4,0,blue,g);
+g=groups.bladder;let b=cyl(.36,4.4,-.1,5.65,-1.72,paper,g);b.rotation.z=Math.PI/2;
+accessory('sample',2.3,.8,1.82,.09);pipe([[2.3,.8,1.82],[2.3,.65,2.08]],.04,steel,groups.sample);
+accessory('drain',-2.5,.75,1.85,.12);pipe([[-2.5,.75,1.85],[-2.5,.55,2.1]],.06,steel,groups.drain);
+g=groups.neutral;bushing(2.48,.65,.85,g);pipe([[2.48,5.05,.65],[3.15,5.05,.65],[3.15,4.4,1.3]],.035,copper,g);
+g=groups.headers;for(let side of [-1,1])for(let y of [1.05,3.3])pipe([[-2.85,y,side*2.25],[2.85,y,side*2.25]],.13,blue,g);
+g=groups.pumps;for(let side of [-1,1]){let p=cyl(.22,.46,2.9,1.1,side*2.35,dark,g);p.rotation.z=Math.PI/2;box(.35,.18,.35,2.9,.78,side*2.35,steel,g);}
+g=groups.coolctrl;box(.63,.75,.25,-3.1,1.9,1.87,steel,g);for(let i=0;i<3;i++)cyl(.045,.03,-3.27+i*.16,2.12,2.02,blue,g);
+g=groups.terminal;for(let i=0;i<7;i++){box(.055,.09,.06,-2.85+i*.075,2.05,2.1,copper2,g);pipe([[-2.85+i*.075,2.05,2.1],[-2.85+i*.075,1.8,2.12]],.012,blue,g);}
+g=groups.coreearth;pipe([[-2.1,1.15,0],[-2.85,.85,.4],[-3.35,.45,1.5]],.03,copper,g);
+g=groups.clamps;for(let y of [1.02,3.52]){box(5.4,.13,.17,-.35,y,.54,dark,g);box(5.4,.13,.17,-.35,y,-.54,dark,g);}
+g=groups.wrings;for(let x of [-2.1,-.35,1.4])for(let y of [1.25,3.23])ring(.83,.32,.07,x,y,0,paper,g);
+g=groups.shields;for(let x of [-2.1,-.35,1.4])ring(.81,.76,.045,x,3.31,0,silver,g);
+g=groups.lifting;for(let x of [-2.65,2.65])for(let z of [-1.15,1.15]){let t=torus(.16,.045,x,4.2,z,steel,g);t.rotation.x=0;box(.3,.1,.3,x,.38,z,steel,g);}
+g=groups.plates;box(.68,.42,.025,1.8,2.1,1.73,silver,g);for(let y of [1.98,2.09,2.2])box(.48,.012,.028,1.8,y,1.75,dark,g);
+
 // Ground reference, fine engineering grid and orientation ring.
 const floor=new THREE.Mesh(new THREE.CircleGeometry(12,96),new THREE.MeshStandardMaterial({color:0x23312c,roughness:.92,transparent:true,opacity:.55}));floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const grid=new THREE.GridHelper(22,44,0x46584c,0x34463c);grid.position.y=-.06;grid.material.transparent=true;grid.material.opacity=.3;scene.add(grid);
