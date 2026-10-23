@@ -7,7 +7,7 @@ let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,pow
 const cutPlane=new THREE.Plane(new THREE.Vector3(0,0,-1),0);
 const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.1,150);camera.position.set(13,9,15);
 const controls=renderer?new OrbitControls(camera,renderer.domElement):null;
-if(renderer){renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setClearColor(0,0);renderer.localClippingEnabled=true;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.3;host.appendChild(renderer.domElement);$('loading').remove();controls.target.set(0,3,0);controls.enableDamping=true;controls.minDistance=6;controls.maxDistance=42;controls.maxPolarAngle=Math.PI;controls.autoRotateSpeed=.6;}
+if(renderer){renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setClearColor(0,0);renderer.localClippingEnabled=true;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.3;host.appendChild(renderer.domElement);$('loading').remove();controls.target.set(0,3,0);controls.enableDamping=true;controls.minDistance=6;controls.maxDistance=70;controls.maxPolarAngle=Math.PI;controls.autoRotateSpeed=.6;}
 scene.add(new THREE.HemisphereLight(0xd9ece8,0x3b4b37,2.7));
 function light(color,intensity,pos){const l=new THREE.DirectionalLight(color,intensity);l.position.set(...pos);scene.add(l);return l;}
 const key=light(0xfff1d4,3.8,[6,14,9]);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-12,right:12,top:12,bottom:-12,near:.5,far:45});key.shadow.bias=-.001;
@@ -15,7 +15,9 @@ light(0xa1cee1,2.7,[-10,6,-5]);light(0xe1eac4,2,[-3,10,10]);
 const mat=(color,metalness=.3,roughness=.4)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
 const steel=mat('#7c9390',.65,.35),dark=mat('#344747',.6,.42),edge=mat('#a4b6ad',.7,.3),copper=mat('#c9874e',.78,.28),copper2=mat('#e4ad6b',.7,.32),ceramic=mat('#a9b5a4',.12,.32),paper=mat('#c4aa76',.05,.78),black=mat('#172522',.3,.6),silver=mat('#b8c8c2',.85,.25),blue=mat('#68acb2',.55,.28);
 const groups={},meshes=[],shell=[],guides=[];let explosion=0,mode='solid',selected=null;
-const motion={tank:[0,-.4,2.7],lid:[0,3.5,0],hv:[0,4.3,-.7],lv:[0,3.7,1.2],core:[0,0,0],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,3.8,0],cooling:[0,0,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[.8,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[1.3,1,-.7],wti:[1.3,1,.5],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
+// Scale component travel without altering assembled (0%) positions.
+const EXPLODE_SPREAD=2.25;
+const motion={tank:[0,-.4,2.7],lid:[0,3.5,0],hv:[0,4.3,-.7],lv:[0,3.7,1.2],core:[-.65,-.7,-.45],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,3.8,0],cooling:[0,.25,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[.8,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[1.3,1,-.7],wti:[1.3,1,.5],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
 Object.assign(motion,{"mog":[2,3,-1],"spr":[-2,3,1],"osr":[1.1,3,-.3],"drive":[4,0,1],"selector":[3,2,0],"oltcoil":[4,1,0],"bladder":[0,4,-2],"sample":[2,-1,2],"drain":[-2,-1,2],"neutral":[3,4,1],"headers":[0,0,3],"pumps":[3,-1,3],"coolctrl":[.45,.12,4.1],"terminal":[1.2,-.12,4.5],"coreearth":[-3,-1,0],"clamps":[0,2,0],"wrings":[0,3,0],"shields":[0,4,0],"lifting":[0,3,2],"plates":[2,0,3]});
 parts.forEach(p=>{let g=new THREE.Group();g.userData.id=p.id;g.userData.vector=new THREE.Vector3(...(motion[p.id]??[0,0,0]));groups[p.id]=g;scene.add(g);});
 function mesh(geo,m,pos,g){const o=new THREE.Mesh(geo,m.clone());o.position.set(...pos);o.castShadow=true;o.receiveShadow=true;g.add(o);o.userData.id=g.userData.id;meshes.push(o);if(['tank','lid'].includes(o.userData.id))shell.push(o);return o;}
@@ -195,15 +197,15 @@ const floor=new THREE.Mesh(new THREE.CircleGeometry(12,96),new THREE.MeshStandar
 const grid=new THREE.GridHelper(22,44,0x46584c,0x34463c);grid.position.y=-.06;grid.material.transparent=true;grid.material.opacity=.3;scene.add(grid);
 for(let r of [5.3,5.38]){let o=new THREE.Mesh(new THREE.TorusGeometry(r,.008,4,160),new THREE.MeshBasicMaterial({color:0x71836b,transparent:true,opacity:.35}));o.rotation.x=Math.PI/2;o.position.y=-.04;scene.add(o);}
 Object.values(groups).forEach(g=>{let geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);let line=new THREE.Line(geo,new THREE.LineDashedMaterial({color:0xb6d69b,dashSize:.1,gapSize:.09,transparent:true,opacity:.3}));line.visible=false;scene.add(line);guides.push({line,g});});
-// X-ray removes the near-side tank skin and dense radiator fins rather than
-// merely fading hundreds of overlapping metal faces (which obscured the core).
+// X-ray removes the full tank, cover, radiator banks, fans, and their
+// external headers/pumps so the internal core and windings remain unobstructed.
 // It never modifies group visibility: manually hidden/isolated components persist.
 function update(){
   const xray=mode==='xray',cut=mode==='cut';
   for(const o of meshes){
     const id=o.userData.id;
     const frontSkin=id==='tank' && o.position.z>1.5;
-    const xrayHidden=xray&&(id==='tank'||id==='lid'||o.userData.isFan===true);
+    const xrayHidden=xray&&['tank','lid','cooling','headers','pumps'].includes(id);
     const cutHidden=cut&&(frontSkin||id==='lid');
     o.visible=!(xrayHidden||cutHidden);
     o.material.opacity=1;
@@ -212,13 +214,18 @@ function update(){
     o.material.clippingPlanes=cut&&['tank','lid','lowcoil','highcoil','insulation','cooling'].includes(id)?[cutPlane]:[];
   }
   for(const g of Object.values(groups)){
-    g.position.copy(g.userData.rest||new THREE.Vector3()).addScaledVector(g.userData.vector,explosion);
+    g.position.copy(g.userData.rest||new THREE.Vector3()).addScaledVector(g.userData.vector,explosion*EXPLODE_SPREAD);
     if(g.userData.id==='highcoil')for(const o of g.children){
       if(o.userData.baseX===undefined)o.userData.baseX=o.position.x;
-      o.position.x=o.userData.baseX+(o.userData.baseX+.35)*explosion*.65;
+      o.position.x=o.userData.baseX+(o.userData.baseX+.35)*explosion*1.2;
     }
   }
-  groups.cooling.children.forEach(b=>b.position.copy(b.userData.offset).multiplyScalar(explosion));
+  groups.cooling.children.forEach(b=>b.position.copy(b.userData.offset).multiplyScalar(explosion*EXPLODE_SPREAD));
+  // Fans pull away from their radiator banks in exploded view; restore on reset.
+  for(const o of meshes)if(o.userData.isFan===true){
+    if(o.userData.assembledZ===undefined)o.userData.assembledZ=o.position.z;
+    o.position.z=o.userData.assembledZ+Math.sign(o.userData.assembledZ)*explosion*1.6;
+  }
   for(const {line,g} of guides){
     const center=new THREE.Vector3(0,2,0);
     const p=line.geometry.attributes.position;
@@ -233,7 +240,7 @@ function update(){
 function select(id){selected=id;const p=parts.find(p=>p.id===id);document.querySelectorAll('.part').forEach(el=>el.classList.toggle('selected',el.dataset.id===id));meshes.forEach(o=>{o.material.emissive.set(o.userData.id===id?0x4b632e:0x000000);o.material.emissiveIntensity=.3;});$('detailContent').innerHTML=`<span class="detail-tag">${p.category}</span><h2>${p.fa}</h2><div class="en">${p.en.toUpperCase()}</div><p>${p.description}</p><div class="detail-actions"><button id="isolate">نمایش فقط این مجموعه</button><button id="showAll">نمایش همه قطعات</button></div><h3>جایگاه در مجموعه</h3><p>${p.location}</p><h3>وضعیت عادی و مبنای مقایسه</h3><p>${p.normal}</p><h3>نقاط توجه در نگهداری</h3><p>${p.inspection}</p><h3>نشانه‌های قابل بررسی</h3><p>${p.faults}</p><h3>بررسی تکمیلی و تفسیر</h3><p>${p.diagnosis}</p><h3>اقدام پس از مشاهده عیب</h3><p>${p.response}</p><h3>اطلاعات قابل ثبت</h3><p>${p.record}</p><p class="note">این مدل، مرجع آموزشی است. بازکردن، آزمون و هرگونه مداخله فقط توسط افراد مجاز، پس از ایزولاسیون، قفل‌گذاری، تأیید بی‌برقی و زمین‌کردن طبق دستورالعمل سایت انجام شود. حدود مجاز و دوره‌های سرویس را از سازنده بگیرید.</p><div class="manual-ref"><strong>مرجع این قطعه</strong><p>${p.manual[0]?`Raychem RPG · بخش ${p.manual[1]} · صفحه چاپی ${fa(p.manual[0])}<br><a href="reference-manual.pdf#page=${p.manual[0]+1}" target="_blank" rel="noopener">باز کردن صفحه مرجع ↗</a>`:p.manual[1]}</p></div><details><summary>منابع فنی و محدوده مدل</summary><p>این راهنما مرجع عمومی نصب و نگهداری است، نه نقشه ابعادی ترانس ۲۳۰/۱۳۲. حدود عددی آزمون، گشتاور و زمان‌ها به این مدل تعمیم داده نشده‌اند. مدل سه‌فاز دو سیم‌پیچه است؛ گروه برداری، توان نامی و ابعاد سازنده مشخص نشده‌اند. تعداد دورها، مسیر هادی‌ها و فاصله‌های عایقی شماتیک‌اند.</p><p><a href="https://www.usbr.gov/tsc/techreferences/mands/mands-pdfs/Trnsfrmr.pdf" target="_blank" rel="noopener">US Bureau of Reclamation — Transformer diagnostics</a><br><a href="https://www.reinhausen.com/fileadmin/downloadcenter/products/protective_devices/safety_relays/rs2001/rs/bal_1800059_11_001_en.pdf" target="_blank" rel="noopener">Reinhausen — RS protective relay instructions</a><br><a href="https://www.hitachienergy.com/products-and-solutions/transformers/transformer-service/upgrade-repair-and-extend/transformer-refurbishment" target="_blank" rel="noopener">Hitachi Energy — Transformer components & service</a><br><a href="https://www.reinhausen.com/servicedetail/oltc-services/maintenance-and-inspection" target="_blank" rel="noopener">Reinhausen — OLTC maintenance</a></p></details>`;$('isolate').onclick=()=>{Object.entries(groups).forEach(([key,g])=>g.visible=key===id);list();update();$('detail').close();};$('showAll').onclick=()=>{Object.values(groups).forEach(g=>g.visible=true);list();update();$('detail').close();};if(!$('detail').open)$('detail').showModal();}
 function list(){let q=$('search').value.trim().toLowerCase();$('parts').innerHTML='';parts.filter(p=>(p.fa+' '+p.en).toLowerCase().includes(q)).forEach(p=>{let row=document.createElement('div');row.className='part';row.dataset.id=p.id;let btn=document.createElement('button');btn.className='part';btn.style.margin='0';btn.innerHTML=`<span class="num">${String(parts.indexOf(p)+1).padStart(2,'0')}</span><span class="names"><strong>${p.fa}</strong><small>${p.en}</small></span>`;btn.onclick=()=>select(p.id);let eye=document.createElement('button');eye.className='eye';eye.textContent=groups[p.id].visible?'◉':'○';eye.title='نمایش / پنهان کردن '+p.fa;eye.setAttribute('aria-label',eye.title);eye.setAttribute('aria-pressed',groups[p.id].visible);eye.onclick=()=>{groups[p.id].visible=!groups[p.id].visible;list();update();};row.append(btn,eye);$('parts').append(row);});if(!$('parts').children.length)$('parts').innerHTML='<p class="empty">قطعه‌ای یافت نشد.</p>';}
 $('search').oninput=list;list();$('close').onclick=()=>$('detail').close();$('detail').addEventListener('close',()=>{meshes.forEach(o=>o.material.emissive.set(0));});document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){let b=d.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)d.close();}}));
-$('explode').oninput=e=>{const old=explosion;explosion=+e.target.value/100;if(controls){const offset=camera.position.clone().sub(controls.target);offset.multiplyScalar((1+explosion*.35)/(1+old*.35));controls.target.y=3+explosion*1.7;camera.position.copy(controls.target).add(offset);}update();};
+$('explode').oninput=e=>{const old=explosion;explosion=+e.target.value/100;if(controls){const offset=camera.position.clone().sub(controls.target);offset.multiplyScalar((1+explosion*.85)/(1+old*.85));controls.target.y=3+explosion*3.2;camera.position.copy(controls.target).add(offset);}update();};
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));$('modeLabel').textContent={solid:'ASSEMBLED VIEW',xray:'X-RAY VIEW',cut:'CUTAWAY VIEW'}[mode];update();});
 function view(pos){if(!controls)return;camera.position.set(...pos);controls.target.set(0,3,0);controls.update();} $('home').onclick=()=>{explosion=0;$('explode').value=0;Object.values(groups).forEach(g=>g.visible=true);list();update();view([13,9,15]);controls&&(controls.autoRotate=false);$('rotate').classList.remove('active');};$('back').onclick=()=>view([-12,8,-14]);$('top').onclick=()=>view([0,20,.01]);$('rotate').onclick=()=>{if(controls){controls.autoRotate=!controls.autoRotate;$('rotate').classList.toggle('active',controls.autoRotate);}};$('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('.workspace').requestFullscreen();}catch(e){$('full').title='تمام صفحه در این مرورگر پشتیبانی نمی‌شود';}};
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();function hit(e){const rect=host.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);ray.setFromCamera(pointer,camera);return ray.intersectObjects(meshes,false).find(h=>{let o=h.object;while(o){if(!o.visible)return false;o=o.parent;}return !(mode==='xray'&&['tank','lid'].includes(h.object.userData.id))&&!(mode==='cut'&&h.object.material.clippingPlanes.length&&h.point.z>0);});}
