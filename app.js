@@ -39,7 +39,7 @@ pipe([[x+.65,3.12,0],[x+.7,3.55,-.2],[x,3.7,-.9],[x,4.1,-.9]],.045,copper,groups
 function bushing(x,z,h,g){cyl(.26,.15,x,4.1,z,silver,g);for(let a=0;a<6;a++){let t=a*Math.PI/3;cyl(.025,.08,x+Math.sin(t)*.21,4.2,z+Math.cos(t)*.21,silver,g);}cyl(.12,h,x,4.2+h/2,z,ceramic,g,.075);let n=Math.round(h/.115);for(let i=0;i<n;i++){let r=.21-.055*(i/n);cyl(r,.045,x,4.24+i*.115,z,ceramic,g,r*.75);}cyl(.06,.23,x,4.28+h,z,silver,g);box(.23,.06,.12,x,4.42+h,z,copper,g);torus(.26,.018,x,4.17+h,z,silver,g);}
 for(let x of [-2.1,-.35,1.4]){bushing(x,-.9,1.8,groups.hv);bushing(x,.9,1.25,groups.lv);}
 // Radiator banks with separate fins, headers, guard rings, and fan blades.
-g=groups.cooling;for(let side of [-1,1]){let bank=new THREE.Group();bank.userData.id='cooling';bank.userData.offset=new THREE.Vector3(0,0,side*2.8);g.add(bank);for(let x=-2.75;x<2.8;x+=.19){box(.055,2.25,.72,x,2.17,side*2.25,steel,bank);box(.085,.09,.68,x,3.3,side*2.25,edge,bank);box(.085,.09,.68,x,1.03,side*2.25,edge,bank);}for(let y of [1.03,3.3]){pipe([[-2.8,y,side*2.25],[2.8,y,side*2.25]],.105,steel,bank);for(let x of [-2.7,2.7])pipe([[x,y,side*1.55],[x,y,side*2.25]],.095,steel,bank);}for(let x of [-1.9,0,1.9]){let z=side*2.73;let o=cyl(.48,.16,x,1.75,z,dark,bank);o.rotation.x=Math.PI/2;for(let rad of [.15,.28,.4,.49]){let q=torus(rad,.012,x,1.75,z+side*.11,silver,bank);q.rotation.x=0;}for(let a=0;a<8;a++){let blade=box(.035,.96,.02,x,1.75,z+side*.12,silver,bank);blade.rotation.z=a*Math.PI/4;}let hub=cyl(.12,.22,x,1.75,z,steel,bank);hub.rotation.x=Math.PI/2;for(let a=0;a<5;a++){let t=a*Math.PI*2/5;let b=box(.15,.29,.04,x+Math.sin(t)*.23,1.75+Math.cos(t)*.23,z,copper2,bank);b.rotation.z=-t+.5;}}}
+g=groups.cooling;for(let side of [-1,1]){let bank=new THREE.Group();bank.userData.id='cooling';bank.userData.offset=new THREE.Vector3(0,0,side*2.8);g.add(bank);for(let x=-2.75;x<2.8;x+=.19){box(.055,2.25,.72,x,2.17,side*2.25,steel,bank);box(.085,.09,.68,x,3.3,side*2.25,edge,bank);box(.085,.09,.68,x,1.03,side*2.25,edge,bank);}for(let y of [1.03,3.3]){pipe([[-2.8,y,side*2.25],[2.8,y,side*2.25]],.105,steel,bank);for(let x of [-2.7,2.7])pipe([[x,y,side*1.55],[x,y,side*2.25]],.095,steel,bank);}for(let x of [-1.9,0,1.9]){const fanStart=meshes.length;let z=side*2.73;let o=cyl(.48,.16,x,1.75,z,dark,bank);o.rotation.x=Math.PI/2;for(let rad of [.15,.28,.4,.49]){let q=torus(rad,.012,x,1.75,z+side*.11,silver,bank);q.rotation.x=0;}for(let a=0;a<8;a++){let blade=box(.035,.96,.02,x,1.75,z+side*.12,silver,bank);blade.rotation.z=a*Math.PI/4;}let hub=cyl(.12,.22,x,1.75,z,steel,bank);hub.rotation.x=Math.PI/2;for(let a=0;a<5;a++){let t=a*Math.PI*2/5;let b=box(.15,.29,.04,x+Math.sin(t)*.23,1.75+Math.cos(t)*.23,z,copper2,bank);b.rotation.z=-t+.5;}for(const fanMesh of meshes.slice(fanStart))fanMesh.userData.isFan=true;}}
 // Conservator positioned above rear edge with a continuous Buchholz oil path.
 g=groups.conservator;let con=cyl(.48,4.9,-.1,5.65,-1.72,steel,g);con.rotation.z=Math.PI/2;for(let x of [-2.55,2.35]){let end=cyl(.49,.06,x,5.65,-1.72,edge,g);end.rotation.z=Math.PI/2;}
 // A single conservator shell can contain two OIL-ISOLATED chambers. The OLTC
@@ -203,7 +203,7 @@ function update(){
   for(const o of meshes){
     const id=o.userData.id;
     const frontSkin=id==='tank' && o.position.z>1.5;
-    const xrayHidden=xray&&(id==='tank'||id==='lid');
+    const xrayHidden=xray&&(id==='tank'||id==='lid'||o.userData.isFan===true);
     const cutHidden=cut&&(frontSkin||id==='lid');
     o.visible=!(xrayHidden||cutHidden);
     o.material.opacity=1;
