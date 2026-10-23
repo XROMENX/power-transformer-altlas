@@ -71,8 +71,8 @@ try {
   await page.unroute('**/app.js');
   // Instruments must sit clear of the radiator bank on the accessible +X tank end.
   const located = await page.evaluate(() => window.__atlasEngineeringProbe.gaugeBounds());
-  assert(located.oti.min[0]>3.35 && located.wti.min[0]>3.35,
-    'OTI/WTI gauges still hidden on the radiator wall: '+JSON.stringify(located));
+  assert(located.oti.max[0]>3.58 && located.wti.max[0]>3.58,
+    'OTI/WTI dial faces must protrude beyond end-wall x=3.28: '+JSON.stringify(located));
   assert(located.oti.count>10 && located.wti.count>10, 'dial face or ticks missing');
   assert(located.oti.max[2] < located.wti.min[2],
     'OTI and WTI dial faces intersect');
