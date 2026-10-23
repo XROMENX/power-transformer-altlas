@@ -41,7 +41,11 @@ for(let x of [-2.1,-.35,1.4]){bushing(x,-.9,1.8,groups.hv);bushing(x,.9,1.25,gro
 // Radiator banks with separate fins, headers, guard rings, and fan blades.
 g=groups.cooling;for(let side of [-1,1]){let bank=new THREE.Group();bank.userData.id='cooling';bank.userData.offset=new THREE.Vector3(0,0,side*2.8);g.add(bank);for(let x=-2.75;x<2.8;x+=.19){box(.055,2.25,.72,x,2.17,side*2.25,steel,bank);box(.085,.09,.68,x,3.3,side*2.25,edge,bank);box(.085,.09,.68,x,1.03,side*2.25,edge,bank);}for(let y of [1.03,3.3]){pipe([[-2.8,y,side*2.25],[2.8,y,side*2.25]],.105,steel,bank);for(let x of [-2.7,2.7])pipe([[x,y,side*1.55],[x,y,side*2.25]],.095,steel,bank);}for(let x of [-1.9,0,1.9]){let z=side*2.73;let o=cyl(.48,.16,x,1.75,z,dark,bank);o.rotation.x=Math.PI/2;for(let rad of [.15,.28,.4,.49]){let q=torus(rad,.012,x,1.75,z+side*.11,silver,bank);q.rotation.x=0;}for(let a=0;a<8;a++){let blade=box(.035,.96,.02,x,1.75,z+side*.12,silver,bank);blade.rotation.z=a*Math.PI/4;}let hub=cyl(.12,.22,x,1.75,z,steel,bank);hub.rotation.x=Math.PI/2;for(let a=0;a<5;a++){let t=a*Math.PI*2/5;let b=box(.15,.29,.04,x+Math.sin(t)*.23,1.75+Math.cos(t)*.23,z,copper2,bank);b.rotation.z=-t+.5;}}}
 // Conservator positioned above rear edge with a continuous Buchholz oil path.
-g=groups.conservator;let con=cyl(.48,4.9,-.1,5.65,-1.72,steel,g);con.rotation.z=Math.PI/2;for(let x of [-2.55,2.35]){let end=cyl(.49,.06,x,5.65,-1.72,edge,g);end.rotation.z=Math.PI/2;}for(let x of [-1.8,1.6]){box(.12,1.4,.14,x,4.65,-1.72,dark,g);let t=torus(.49,.025,x,5.65,-1.72,silver,g);t.rotation.y=Math.PI/2;t.rotation.x=0;}let gauge=cyl(.17,.07,2.4,5.65,-1.72,black,g);gauge.rotation.z=Math.PI/2;pipe([[2,4.05,-1.72],[2,4.8,-1.72],[-1.8,5.07,-1.72],[-1.8,5.19,-1.72]],.075,steel,g);
+g=groups.conservator;let con=cyl(.48,4.9,-.1,5.65,-1.72,steel,g);con.rotation.z=Math.PI/2;for(let x of [-2.55,2.35]){let end=cyl(.49,.06,x,5.65,-1.72,edge,g);end.rotation.z=Math.PI/2;}
+// A single conservator shell can contain two OIL-ISOLATED chambers. The OLTC
+// compartment occupies the right end; no second external reservoir is drawn.
+let separator=cyl(.46,.045,1.88,5.65,-1.72,dark,g);separator.rotation.z=Math.PI/2;
+let chamberBand=torus(.49,.032,1.88,5.65,-1.72,copper,g);chamberBand.rotation.set(0,Math.PI/2,0);for(let x of [-1.8,1.6]){box(.12,1.4,.14,x,4.65,-1.72,dark,g);let t=torus(.49,.025,x,5.65,-1.72,silver,g);t.rotation.y=Math.PI/2;t.rotation.x=0;}let gauge=cyl(.17,.07,2.4,5.65,-1.72,black,g);gauge.rotation.z=Math.PI/2;pipe([[2,4.05,-1.72],[2,4.8,-1.72],[-1.8,5.07,-1.72],[-1.8,5.19,-1.72]],.075,steel,g);
 g=groups.buchholz;box(.45,.42,.28,.3,4.92,-1.72,blue,g);for(let x of [.04,.56]){let f=cyl(.19,.04,x,4.92,-1.72,silver,g);f.rotation.z=Math.PI/2;}let sight=cyl(.09,.03,.3,4.99,-1.56,black,g);sight.rotation.x=Math.PI/2;box(.65,.035,.5,.3,5.27,-1.72,steel,g);for(let x of [.05,.55])box(.02,.3,.02,x,5.12,-1.9,silver,g);cyl(.035,.12,.3,5.18,-1.72,copper,g);
 for(let x of [-.5,1.1]){let v=cyl(.15,.18,x,4.94,-1.72,dark,g);v.rotation.z=Math.PI/2;cyl(.025,.22,x,5.1,-1.72,silver,g);torus(.12,.018,x,5.22,-1.72,dark,g);}
 g=groups.oltc;cyl(.35,2.6,2.72,2.42,0,dark,g);for(let y of [1.2,2.2,3.5])torus(.36,.03,2.72,y,0,silver,g);cyl(.44,.14,2.72,4.12,0,steel,g);box(.7,.9,.35,3.55,2.2,.1,steel,g);box(.5,.65,.02,3.55,2.2,.29,dark,g);box(.25,.13,.025,3.55,2.4,.31,black,g);pipe([[2.72,4.2,0],[3.55,4.2,0],[3.55,2.7,0]],.035,silver,g);
@@ -102,7 +106,8 @@ function accessory(id,x,y,z,r=.12){const g=groups[id];cyl(r,.13,x,y,z,steel,g);c
 accessory('mog',2.52,5.65,-1.72,.19);
 accessory('spr',-2.5,3.97,-.2,.16);
 // Jansen/Johnson relay (the existing OLTC oil-surge device), in its OWN oil circuit.
-// R connection on the OLTC head -> near-horizontal flow relay -> OLTC conservator.
+// R connection on the OLTC head -> flow relay -> ISOLATED OLTC CHAMBER
+// within the single shared conservator vessel (not a separate external tank).
 // The normal tank Buchholz relay remains in the independent main-oil circuit.
 g=groups.osr;
 pipe([[2.72,4.20,0],[2.78,4.64,-.22],[2.86,4.92,-.35]],.08,steel,g);
@@ -113,14 +118,13 @@ box(.28,.18,.06,3.13,5.16,-.155,dark,g); // relay inspection/window face
 let viewport=cyl(.095,.024,3.13,5.16,-.116,silver,g);viewport.rotation.x=Math.PI/2;
 let glass=cyl(.072,.026,3.13,5.16,-.098,black,g);glass.rotation.x=Math.PI/2;
 box(.15,.12,.18,3.13,5.34,-.35,dark,g); // dry-contact terminal housing
-pipe([[3.41,4.94,-.35],[3.59,4.96,-.35],[3.59,5.35,-.35],[3.59,5.55,-.35]],.077,steel,g);
+pipe([[3.41,4.94,-.35],[3.63,4.96,-.35],[3.63,5.20,-.35],[3.63,5.65,-.35],[3.63,5.90,-1.72],[2.28,5.90,-1.72],[2.28,5.65,-1.72]],.077,steel,g); // OLTC chamber nozzle on shared shell
 
 g=groups.drive;box(.62,.82,.32,3.67,2.2,.6,steel,g);box(.4,.12,.04,3.67,2.42,.78,blue,g);cyl(.13,.25,3.67,1.78,.6,dark,g);
 g=groups.selector;for(let y of [1.55,1.9,2.25,2.6,2.95]){torus(.26,.025,2.72,y,0,copper,g);box(.35,.045,.06,2.72,y,.25,silver,g);}
 g=groups.oltcoil;cyl(.42,2.35,2.72,2.4,0,blue,g);
-// Separated educational OLTC oil conservator (never tied to the main oil pipe).
-let oltcConservator=cyl(.29,1.12,3.59,5.64,-.35,steel,g);oltcConservator.rotation.z=Math.PI/2;
-for(let x of [3.04,4.14]){let cap=cyl(.30,.045,x,5.64,-.35,edge,g);cap.rotation.z=Math.PI/2;}
+// OLTC oil is stored in the partitioned right-end chamber of groups.conservator.
+// No duplicate tank geometry: oil separation is inside the one vessel.
 
 g=groups.bladder;let b=cyl(.36,4.4,-.1,5.65,-1.72,paper,g);b.rotation.z=Math.PI/2;
 accessory('sample',2.3,.8,1.82,.09);pipe([[2.3,.8,1.82],[2.3,.65,2.08]],.04,steel,groups.sample);
