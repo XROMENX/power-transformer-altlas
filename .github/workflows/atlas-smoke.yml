@@ -2,7 +2,7 @@ name: Transformer Atlas Browser Smoke
 on:
   push:
     branches:
-      - fix/tested-41-component-atlas
+      - 'fix/**'
   pull_request:
     branches:
       - main
@@ -33,5 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: atlas-smoke-preview
-          path: atlas-smoke.png
+          path: |
+            atlas-smoke.png
+            marshalling-cabinet-smoke.png
           if-no-files-found: ignore
