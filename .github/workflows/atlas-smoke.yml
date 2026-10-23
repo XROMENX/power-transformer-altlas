@@ -36,4 +36,6 @@ jobs:
           path: |
             atlas-smoke.png
             marshalling-cabinet-smoke.png
+            end-wall-gauges-jansen.png
+            xray-internals.png
           if-no-files-found: ignore
