@@ -81,8 +81,17 @@ try {
   await page.waitForTimeout(300);
   for (const [id,label] of [['oti','نشانگر دمای روغن'],['wti','نشانگر دمای سیم‌پیچ']]) {
     const point=await page.evaluate(id=>window.__atlasEngineeringProbe.point(id),id);
+    const trace = await page.evaluate(pt=>{
+      const el=document.elementFromPoint(pt.x,pt.y);
+      const hitPart=hit({clientX:pt.x,clientY:pt.y});
+      return {pt,element:el?.tagName,elementId:el?.id,elementClass:el?.className,
+        hit:hitPart?.object?.userData?.id,
+        camera:camera.position.toArray(),target:controls.target.toArray(),
+        viewport:host.getBoundingClientRect().toJSON()};
+    },point);
+    console.log('GAUGE_RAYCAST',id,JSON.stringify(trace));
     await page.mouse.click(point.x,point.y);
-    assert(await page.locator('#detail').evaluate(el=>el.open),'end-wall gauge not clickable: '+id);
+    assert(await page.locator('#detail').evaluate(el=>el.open),'end-wall gauge not clickable: '+id+' '+JSON.stringify(trace));
     assert((await page.locator('#detailContent').innerText()).includes(label),'wrong dial selected: '+id);
     await page.locator('#close').click();
   }
