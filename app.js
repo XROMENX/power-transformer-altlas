@@ -15,8 +15,8 @@ light(0xa1cee1,2.7,[-10,6,-5]);light(0xe1eac4,2,[-3,10,10]);
 const mat=(color,metalness=.3,roughness=.4)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
 const steel=mat('#7c9390',.65,.35),dark=mat('#344747',.6,.42),edge=mat('#a4b6ad',.7,.3),copper=mat('#c9874e',.78,.28),copper2=mat('#e4ad6b',.7,.32),ceramic=mat('#a9b5a4',.12,.32),paper=mat('#c4aa76',.05,.78),black=mat('#172522',.3,.6),silver=mat('#b8c8c2',.85,.25),blue=mat('#68acb2',.55,.28);
 const groups={},meshes=[],shell=[],guides=[];let explosion=0,mode='solid',selected=null;
-const motion={tank:[0,-.4,2.7],lid:[0,3.5,0],hv:[0,4.3,-.7],lv:[0,3.7,1.2],core:[0,0,0],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,3.8,0],cooling:[0,0,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[1,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[-1,0,3],wti:[1,0,3],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
-Object.assign(motion,{"mog":[2,3,-1],"spr":[-2,3,1],"osr":[1,3,-2],"drive":[4,0,1],"selector":[3,2,0],"oltcoil":[4,1,0],"bladder":[0,4,-2],"sample":[2,-1,2],"drain":[-2,-1,2],"neutral":[3,4,1],"headers":[0,0,3],"pumps":[3,-1,3],"coolctrl":[-3,0,3],"terminal":[-3,1,4],"coreearth":[-3,-1,0],"clamps":[0,2,0],"wrings":[0,3,0],"shields":[0,4,0],"lifting":[0,3,2],"plates":[2,0,3]});
+const motion={tank:[0,-.4,2.7],lid:[0,3.5,0],hv:[0,4.3,-.7],lv:[0,3.7,1.2],core:[0,0,0],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,3.8,0],cooling:[0,0,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[.8,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[-1,0,3],wti:[1,0,3],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
+Object.assign(motion,{"mog":[2,3,-1],"spr":[-2,3,1],"osr":[1,3,-2],"drive":[4,0,1],"selector":[3,2,0],"oltcoil":[4,1,0],"bladder":[0,4,-2],"sample":[2,-1,2],"drain":[-2,-1,2],"neutral":[3,4,1],"headers":[0,0,3],"pumps":[3,-1,3],"coolctrl":[.45,.12,4.1],"terminal":[1.2,-.12,4.5],"coreearth":[-3,-1,0],"clamps":[0,2,0],"wrings":[0,3,0],"shields":[0,4,0],"lifting":[0,3,2],"plates":[2,0,3]});
 parts.forEach(p=>{let g=new THREE.Group();g.userData.id=p.id;g.userData.vector=new THREE.Vector3(...(motion[p.id]??[0,0,0]));groups[p.id]=g;scene.add(g);});
 function mesh(geo,m,pos,g){const o=new THREE.Mesh(geo,m.clone());o.position.set(...pos);o.castShadow=true;o.receiveShadow=true;g.add(o);o.userData.id=g.userData.id;meshes.push(o);if(['tank','lid'].includes(o.userData.id))shell.push(o);return o;}
 function box(w,h,d,x,y,z,m,g){return mesh(new THREE.BoxGeometry(w,h,d),m,[x,y,z],g);}
@@ -45,7 +45,28 @@ g=groups.conservator;let con=cyl(.48,4.9,-.1,5.65,-1.72,steel,g);con.rotation.z=
 g=groups.buchholz;box(.45,.42,.28,.3,4.92,-1.72,blue,g);for(let x of [.04,.56]){let f=cyl(.19,.04,x,4.92,-1.72,silver,g);f.rotation.z=Math.PI/2;}let sight=cyl(.09,.03,.3,4.99,-1.56,black,g);sight.rotation.x=Math.PI/2;box(.65,.035,.5,.3,5.27,-1.72,steel,g);for(let x of [.05,.55])box(.02,.3,.02,x,5.12,-1.9,silver,g);cyl(.035,.12,.3,5.18,-1.72,copper,g);
 for(let x of [-.5,1.1]){let v=cyl(.15,.18,x,4.94,-1.72,dark,g);v.rotation.z=Math.PI/2;cyl(.025,.22,x,5.1,-1.72,silver,g);torus(.12,.018,x,5.22,-1.72,dark,g);}
 g=groups.oltc;cyl(.35,2.6,2.72,2.42,0,dark,g);for(let y of [1.2,2.2,3.5])torus(.36,.03,2.72,y,0,silver,g);cyl(.44,.14,2.72,4.12,0,steel,g);box(.7,.9,.35,3.55,2.2,.1,steel,g);box(.5,.65,.02,3.55,2.2,.29,dark,g);box(.25,.13,.025,3.55,2.4,.31,black,g);pipe([[2.72,4.2,0],[3.55,4.2,0],[3.55,2.7,0]],.035,silver,g);
-g=groups.aux;box(.75,1,.3,-2.6,2.25,1.86,steel,g);box(.65,.88,.02,-2.6,2.25,2.02,dark,g);box(.055,.2,.04,-2.35,2.25,2.06,silver,g);for(let x of [-1.5,-.95]){g=x===-1.5?groups.oti:groups.wti;let a=cyl(.17,.1,x,3.3,1.73,silver,g);a.rotation.x=Math.PI/2;let b=cyl(.135,.015,x,3.3,1.79,black,g);b.rotation.x=Math.PI/2;let n=box(.012,.1,.015,x,3.33,1.81,paper,g);n.rotation.z=.6;}
+// Tank-mounted marshalling enclosure. The hinged door is open to reveal the two
+// distinct internal assemblies. Cooling control and terminals are NOT mounted
+// separately on the exterior wall of the transformer.
+g=groups.aux;
+box(1.54,1.44,.065,-2.44,2.32,1.76,dark,g); // rear mounting plate
+for(let x of [-3.19,-1.69])box(.055,1.42,.42,x,2.32,1.955,steel,g); // weatherproof side walls
+for(let y of [1.60,3.04])box(1.55,.055,.42,-2.44,y,1.955,steel,g); // cabinet frame
+box(1.70,.07,.50,-2.44,3.08,1.95,steel,g); // rain hood
+for(let x of [-2.97,-2.62,-2.28,-1.94]){ // cable entry glands underneath
+  cyl(.065,.10,x,1.52,1.98,dark,g);
+  cyl(.045,.025,x,1.47,1.98,silver,g);
+}
+const marshallingDoor=new THREE.Group();
+marshallingDoor.userData.id='aux';
+marshallingDoor.position.set(-3.205,2.32,2.17);
+marshallingDoor.rotation.y=-Math.PI*.61; // hinged outward: unobstructed internal equipment
+g.add(marshallingDoor);
+box(1.5,1.39,.055,.75,0,0,steel,marshallingDoor);
+box(1.30,1.18,.018,.75,0,.037,dark,marshallingDoor);
+box(.045,.18,.045,1.32,0,.067,silver,marshallingDoor);
+for(let y of [-.58,.58])cyl(.045,.08,0,y,0,silver,marshallingDoor);
+for(let x of [-1.5,-.95]){g=x===-1.5?groups.oti:groups.wti;let a=cyl(.17,.1,x,3.3,1.73,silver,g);a.rotation.x=Math.PI/2;let b=cyl(.135,.015,x,3.3,1.79,black,g);b.rotation.x=Math.PI/2;let n=box(.012,.1,.015,x,3.33,1.81,paper,g);n.rotation.z=.6;}
 g=groups.breather;pipe([[-2.2,5.4,-1.75],[-3.7,5.35,-1.75],[-3.7,2.6,-1.75]],.035,steel,g);cyl(.13,.4,-3.7,2.35,-1.75,copper2,g);cyl(.16,.07,-3.7,2.6,-1.75,silver,g);cyl(.16,.1,-3.7,2.08,-1.75,black,g);
 // Service fittings identified in the supplied Raychem RPG manual.
 g=groups.ct;ring(.28,.16,.17,-2.1,3.65,.9,dark,g);torus(.28,.018,-2.1,3.7,.9,paper,g);
@@ -69,8 +90,42 @@ accessory('drain',-2.5,.75,1.85,.12);pipe([[-2.5,.75,1.85],[-2.5,.55,2.1]],.06,s
 g=groups.neutral;bushing(2.48,.65,.85,g);pipe([[2.48,5.05,.65],[3.15,5.05,.65],[3.15,4.4,1.3]],.035,copper,g);
 g=groups.headers;for(let side of [-1,1])for(let y of [1.05,3.3])pipe([[-2.85,y,side*2.25],[2.85,y,side*2.25]],.13,blue,g);
 g=groups.pumps;for(let side of [-1,1]){let p=cyl(.22,.46,2.9,1.1,side*2.35,dark,g);p.rotation.z=Math.PI/2;box(.35,.18,.35,2.9,.78,side*2.35,steel,g);}
-g=groups.coolctrl;box(.63,.75,.25,-3.1,1.9,1.87,steel,g);for(let i=0;i<3;i++)cyl(.045,.03,-3.27+i*.16,2.12,2.02,blue,g);
-g=groups.terminal;for(let i=0;i<7;i++){box(.055,.09,.06,-2.85+i*.075,2.05,2.1,copper2,g);pipe([[-2.85+i*.075,2.05,2.1],[-2.85+i*.075,1.8,2.12]],.012,blue,g);}
+// Cooling control contactors, overload relays, manual/auto selector and miniature
+// circuit breakers are panel-mounted INSIDE the marshalling enclosure.
+g=groups.coolctrl;
+box(.76,1.01,.035,-2.70,2.38,1.84,dark,g);
+for(let y of [2.66,2.19])box(.70,.045,.06,-2.70,y,1.92,silver,g); // DIN rails
+for(let i=0;i<3;i++){
+  const x=-2.95+i*.25;
+  box(.185,.30,.11,x,2.49,1.965,steel,g); // cooling-stage contactors
+  box(.16,.065,.014,x,2.56,2.03,blue,g);
+  box(.17,.14,.085,x,2.13,1.96,dark,g); // individual motor protection
+  cyl(.035,.022,x,2.12,2.013,silver,g).rotation.x=Math.PI/2;
+}
+box(.18,.18,.07,-2.71,1.98,1.95,silver,g); // auto/manual selector
+cyl(.063,.044,-2.71,1.98,2.009,black,g).rotation.x=Math.PI/2;
+box(.22,.055,.02,-2.71,1.98,2.044,blue,g);
+
+// Vertical DIN terminal strip and routed, insulated control leads within the
+// RIGHT-HAND compartment. Wiring remains schematic, not a wiring diagram.
+g=groups.terminal;
+box(.25,1.02,.045,-1.955,2.38,1.85,dark,g);
+box(.205,.91,.055,-1.955,2.38,1.90,silver,g);
+for(let i=0;i<9;i++){
+  const y=1.98+i*.091;
+  box(.185,.076,.105,-1.955,y,1.983,paper,g); // isolated terminal blocks
+  for(let x of [-2.014,-1.895]) {
+    let screw=cyl(.024,.018,x,y,2.047,silver,g);
+    screw.rotation.x=Math.PI/2;
+  }
+  const tint=i%3===0?blue:i%3===1?copper:paper;
+  pipe([[-2.07,y,2.038],[-2.18,y,2.051],[-2.29,2.04+i*.075,2.051]],.009,tint,g);
+}
+for(let i=0;i<3;i++){
+  const x=-2.02+i*.057;
+  pipe([[x,1.99,2.045],[x,1.78,2.045],[x-.1,1.66,1.985]],.012,i===1?copper:blue,g);
+}
+
 g=groups.coreearth;pipe([[-2.1,1.15,0],[-2.85,.85,.4],[-3.35,.45,1.5]],.03,copper,g);
 g=groups.clamps;for(let y of [1.02,3.52]){box(5.4,.13,.17,-.35,y,.54,dark,g);box(5.4,.13,.17,-.35,y,-.54,dark,g);}
 g=groups.wrings;for(let x of [-2.1,-.35,1.4])for(let y of [1.25,3.23])ring(.83,.32,.07,x,y,0,paper,g);
