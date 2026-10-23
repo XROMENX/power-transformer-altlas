@@ -34,8 +34,8 @@ try {
   assert.equal(await credit.count(),1,'project credit footer missing');
   assert((await credit.innerText()).includes('سید حمیدرضا ملک نیا'),'credit name mismatch');
   assert((await credit.innerText()).includes('طراحی و توسعه'),'credit attribution missing');
-  const footerLayout=await credit.evaluate(el=>({bottom:el.getBoundingClientRect().bottom,doc:document.documentElement.scrollHeight}));
-  assert(footerLayout.bottom>=window.innerHeight-1,'credit should sit at the document end');
+  const footerLayout=await credit.evaluate(el=>({bottom:el.getBoundingClientRect().bottom,viewportHeight:window.innerHeight,doc:document.documentElement.scrollHeight}));
+  assert(footerLayout.bottom>=footerLayout.viewportHeight-1,'credit should sit at the document end');
   assert.equal(await page.locator('#loading').count(), 0, 'WebGL renderer failed');
   const gl = await page.locator('#viewport canvas').evaluate(el => !!(el.getContext('webgl2') || el.getContext('webgl')));
   assert(gl, 'WebGL context unavailable');
