@@ -30,6 +30,12 @@ try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
   await page.waitForSelector('#viewport canvas', { timeout: 35000 });
   assert.equal(await page.locator('#parts button.part').count(), 41, 'parts list failed to initialize');
+  const credit = page.locator('footer.site-credit');
+  assert.equal(await credit.count(),1,'project credit footer missing');
+  assert((await credit.innerText()).includes('سید حمیدرضا ملک نیا'),'credit name mismatch');
+  assert((await credit.innerText()).includes('طراحی و توسعه'),'credit attribution missing');
+  const footerLayout=await credit.evaluate(el=>({bottom:el.getBoundingClientRect().bottom,viewportHeight:window.innerHeight,doc:document.documentElement.scrollHeight}));
+  assert(footerLayout.bottom>=footerLayout.viewportHeight-1,'credit should sit at the document end');
   assert.equal(await page.locator('#loading').count(), 0, 'WebGL renderer failed');
   const gl = await page.locator('#viewport canvas').evaluate(el => !!(el.getContext('webgl2') || el.getContext('webgl')));
   assert(gl, 'WebGL context unavailable');
@@ -104,6 +110,10 @@ try {
   await phone.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
   await phone.waitForSelector('#viewport canvas', { timeout: 30000 });
   assert.equal(await phone.locator('#parts button.part').count(), 41, 'mobile component listing');
+  assert.equal(await phone.locator('footer.site-credit').count(),1,'mobile footer missing');
+  await phone.locator('footer.site-credit').scrollIntoViewIfNeeded();
+  assert(await phone.locator('footer.site-credit').isVisible(),'credit is not visible at the end on mobile');
+  assert((await phone.locator('footer.site-credit').innerText()).includes('سید حمیدرضا ملک نیا'),'mobile attribution mismatch');
   await phone.locator('#search').fill('شیلد');
   assert.equal(await phone.locator('#parts button.part').count(), 1, 'mobile search');
   await phone.locator('#parts button.part').click();
