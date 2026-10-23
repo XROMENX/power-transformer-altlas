@@ -93,7 +93,8 @@ try {
     'Jansen line must terminate at partitioned chamber of ONE shared conservator: '+JSON.stringify(jansen));
   assert(jansen.name.includes('جانسون')&&jansen.location.includes('R')&&jansen.location.includes('همان بدنه'),
     'Jansen details must describe one conservator with an isolated OLTC chamber');
-  assert(jansen.relay.min[0]>2.5 && jansen.relay.min[1]>4.1,'Jansen relay is not near the OLTC head');
+  assert(jansen.relay.min[0]>2.0 && jansen.relay.min[1]>4.1 && jansen.relay.max[0]>3.5,
+    'Jansen assembly must run from OLTC head to shared conservator: '+JSON.stringify(jansen.relay));
   assert(Math.abs(jansen.relay.max[2]-jansen.buchholz.max[2])>.4,'Jansen relay tied to main Buchholz piping');
   await page.locator('#search').fill('جانسون');
   assert.equal(await page.locator('#parts button.part').count(),1,'Persian Jansen relay discovery');
