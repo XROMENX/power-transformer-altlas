@@ -51,32 +51,6 @@ g=groups.ct;ring(.28,.16,.17,-2.1,3.65,.9,dark,g);torus(.28,.018,-2.1,3.7,.9,pap
 for(let x of [-1.5,-.95]){g=x===-1.5?groups.oti:groups.wti;pipe([[x,3.3,1.8],[x,3.7,1.5],[x,4.08,.5]],.012,copper,g);cyl(.055,.16,x,4.07,.5,silver,g);}
 g=groups.valves;for(let x of [-2.7,2.7])for(let side of [-1,1])for(let y of [1.03,3.3]){let f=cyl(.16,.07,x,y,side*1.82,silver,g);f.rotation.x=Math.PI/2;box(.04,.21,.035,x,y+.16,side*1.82,dark,g);}pipe([[2.8,.85,1.57],[2.8,.85,1.98]],.055,steel,g);torus(.11,.018,2.8,1.01,1.93,dark,g);for(let x of [-2.7,2.7])cyl(.035,.1,x,3.45,2.25,copper,g);
 g=groups.earth;for(let x of [-3,3]){box(.19,.12,.06,x,.85,1.7,copper,g);pipe([[x,.85,1.73],[x,.45,1.73],[x,.06,2]],.025,copper,g);}
-
-// Extended component groups: interactive 3D educational geometry (not manufacturer CAD).
-const extraIds=["mog","spr","osr","drive","selector","oltcoil","bladder","sample","drain","neutral","headers","pumps","coolctrl","terminal","coreearth","clamps","wrings","shields","lifting","plates"];
-extraIds.forEach(id=>{const group=new THREE.Group();group.userData.id=id;group.userData.vector=new THREE.Vector3(0,0,0);groups[id]=group;scene.add(group);});
-function accessory(id,x,y,z,r=.12){const g=groups[id];cyl(r,.13,x,y,z,steel,g);cyl(r*.72,.04,x,y+.09,z,blue,g);return g;}
-accessory('mog',2.52,5.65,-1.72,.19);
-accessory('spr',-2.5,3.97,-.2,.16);
-accessory('osr',1.65,5.06,-1.72,.13);
-g=groups.drive;box(.62,.82,.32,3.67,2.2,.6,steel,g);box(.4,.12,.04,3.67,2.42,.78,blue,g);cyl(.13,.25,3.67,1.78,.6,dark,g);
-g=groups.selector;for(let y of [1.55,1.9,2.25,2.6,2.95]){torus(.26,.025,2.72,y,0,copper,g);box(.35,.045,.06,2.72,y,.25,silver,g);}
-g=groups.oltcoil;cyl(.42,2.35,2.72,2.4,0,blue,g);
-g=groups.bladder;let b=cyl(.36,4.4,-.1,5.65,-1.72,paper,g);b.rotation.z=Math.PI/2;
-accessory('sample',2.3,.8,1.82,.09);pipe([[2.3,.8,1.82],[2.3,.65,2.08]],.04,steel,groups.sample);
-accessory('drain',-2.5,.75,1.85,.12);pipe([[-2.5,.75,1.85],[-2.5,.55,2.1]],.06,steel,groups.drain);
-g=groups.neutral;bushing(2.48,.65,.85,g);pipe([[2.48,5.05,.65],[3.15,5.05,.65],[3.15,4.4,1.3]],.035,copper,g);
-g=groups.headers;for(let side of [-1,1])for(let y of [1.05,3.3])pipe([[-2.85,y,side*2.25],[2.85,y,side*2.25]],.13,blue,g);
-g=groups.pumps;for(let side of [-1,1]){let p=cyl(.22,.46,2.9,1.1,side*2.35,dark,g);p.rotation.z=Math.PI/2;box(.35,.18,.35,2.9,.78,side*2.35,steel,g);}
-g=groups.coolctrl;box(.63,.75,.25,-3.1,1.9,1.87,steel,g);for(let i=0;i<3;i++)cyl(.045,.03,-3.27+i*.16,2.12,2.02,blue,g);
-g=groups.terminal;for(let i=0;i<7;i++){box(.055,.09,.06,-2.85+i*.075,2.05,2.1,copper2,g);pipe([[-2.85+i*.075,2.05,2.1],[-2.85+i*.075,1.8,2.12]],.012,blue,g);}
-g=groups.coreearth;pipe([[-2.1,1.15,0],[-2.85,.85,.4],[-3.35,.45,1.5]],.03,copper,g);
-g=groups.clamps;for(let y of [1.02,3.52]){box(5.4,.13,.17,-.35,y,.54,dark,g);box(5.4,.13,.17,-.35,y,-.54,dark,g);}
-g=groups.wrings;for(let x of [-2.1,-.35,1.4])for(let y of [1.25,3.23])ring(.83,.32,.07,x,y,0,paper,g);
-g=groups.shields;for(let x of [-2.1,-.35,1.4])ring(.81,.76,.045,x,3.31,0,silver,g);
-g=groups.lifting;for(let x of [-2.65,2.65])for(let z of [-1.15,1.15]){let t=torus(.16,.045,x,4.2,z,steel,g);t.rotation.x=0;box(.3,.1,.3,x,.38,z,steel,g);}
-g=groups.plates;box(.68,.42,.025,1.8,2.1,1.73,silver,g);for(let y of [1.98,2.09,2.2])box(.48,.012,.028,1.8,y,1.75,dark,g);
-
 // Ground reference, fine engineering grid and orientation ring.
 const floor=new THREE.Mesh(new THREE.CircleGeometry(12,96),new THREE.MeshStandardMaterial({color:0x23312c,roughness:.92,transparent:true,opacity:.55}));floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const grid=new THREE.GridHelper(22,44,0x46584c,0x34463c);grid.position.y=-.06;grid.material.transparent=true;grid.material.opacity=.3;scene.add(grid);
