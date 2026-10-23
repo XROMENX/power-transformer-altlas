@@ -23,7 +23,7 @@ try {
   await page.route('**/app.js', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    const instrument = "\nwindow.__atlasGeometryProbe = {\n  inspect() {\n    const bounds = id => {\n      const box = new THREE.Box3().setFromObject(groups[id]);\n      return {min:box.min.toArray(), max:box.max.toArray(), meshes:groups[id].children.filter(o=>o.isMesh).length};\n    };\n    const plate = groups.aux.children.find(o=>o.isMesh\n      && Math.abs(o.geometry.parameters?.width - 1.54)<.0001\n      && Math.abs(o.geometry.parameters?.height - 1.44)<.0001);\n    if(!plate) throw new Error('Marshalling enclosure backplate missing');\n    return {\n      panel: {x:-2.44,y:2.32,z:1.76,width:plate.geometry.parameters.width,height:plate.geometry.parameters.height},\n      cooling: bounds('coolctrl'),\n      terminals: bounds('terminal'),\n      hingedDoor: groups.aux.children.some(o=>o.isGroup && Math.abs(o.rotation.y)>1.5),\n      totalParts: parts.length\n    };\n  },\n  focus() {\n    camera.position.set(-2.46,2.62,7.8);\n    controls.target.set(-2.46,2.35,1.95);\n    controls.update();\n  },\n  point(id) {\n    const target = groups[id].children.find(o=>o.isMesh && Math.abs(o.geometry.parameters?.width-.185)<.0001);\n    if(!target) throw new Error('clickable equipment mesh missing: '+id);\n    const v = target.getWorldPosition(new THREE.Vector3()).project(camera);\n    const rect=host.getBoundingClientRect();\n    return {x:rect.left+(v.x+1)*rect.width*.5,y:rect.top+(1-v.y)*rect.height*.5};\n  }\n};"
+    const instrument = "\nwindow.__atlasGeometryProbe = {\n  inspect() {\n    const bounds = id => {\n      const box = new THREE.Box3().setFromObject(groups[id]);\n      return {min:box.min.toArray(), max:box.max.toArray(), meshes:groups[id].children.filter(o=>o.isMesh).length};\n    };\n    const plate = groups.aux.children.find(o=>o.isMesh\n      && Math.abs(o.geometry.parameters?.width - 1.54)<.0001\n      && Math.abs(o.geometry.parameters?.height - 1.44)<.0001);\n    if(!plate) throw new Error('Marshalling enclosure backplate missing');\n    return {\n      panel: (()=>{const b=new THREE.Box3().setFromObject(plate);return {min:b.min.toArray(),max:b.max.toArray()};})(), cabinetAtEnd: groups.aux.parent===groups.coolctrl.parent && groups.coolctrl.parent===groups.terminal.parent && Math.abs(groups.aux.parent.position.x+3.62)<.01,\n      cooling: bounds('coolctrl'),\n      terminals: bounds('terminal'),\n      hingedDoor: groups.aux.children.some(o=>o.isGroup && Math.abs(o.rotation.y)>1.5),\n      totalParts: parts.length\n    };\n  },\n  focus() {\n    camera.position.set(-9,2.8,0);\n    controls.target.set(-3.65,2.32,0);\n    controls.update();\n  },\n  point(id) {\n    const target = groups[id].children.find(o=>o.isMesh && Math.abs(o.geometry.parameters?.width-.185)<.0001);\n    if(!target) throw new Error('clickable equipment mesh missing: '+id);\n    const v = target.getWorldPosition(new THREE.Vector3()).project(camera);\n    const rect=host.getBoundingClientRect();\n    return {x:rect.left+(v.x+1)*rect.width*.5,y:rect.top+(1-v.y)*rect.height*.5};\n  }\n};"
     await route.fulfill({ response, body: source + '\n' + instrument });
   });
   page.on('pageerror', e => errors.push(e.stack || String(e)));
@@ -38,18 +38,19 @@ try {
   const physical = await page.evaluate(() => window.__atlasGeometryProbe.inspect());
   assert.equal(physical.totalParts, 41);
   assert(physical.hingedDoor, 'marshalling door should be visibly open');
-  const left=physical.panel.x-physical.panel.width/2;
-  const right=physical.panel.x+physical.panel.width/2;
-  const bottom=physical.panel.y-physical.panel.height/2;
-  const top=physical.panel.y+physical.panel.height/2;
+  assert(physical.cabinetAtEnd, 'cabinet must mount on accessible end face, not behind radiator bank');
+  const panel=physical.panel;
   for(const [label,part] of [['cooling',physical.cooling],['terminal',physical.terminals]]) {
     assert(part.meshes>6, label+' lacks detailed selectable objects');
-    assert(part.min[0]>=left-.01 && part.max[0]<=right+.01,label+' is outside cabinet horizontally: '+JSON.stringify(part));
-    assert(part.min[1]>=bottom-.04 && part.max[1]<=top+.01,label+' is outside cabinet vertically: '+JSON.stringify(part));
-    assert(part.min[2]>=physical.panel.z && part.max[2]<=2.18,label+' is not mounted behind the cabinet door: '+JSON.stringify(part));
+    assert(part.min[0]>=panel.min[0]-.45 && part.max[0]<=panel.max[0]+.02,
+      label+' should be recessed into end-mounted cabinet: '+JSON.stringify(part));
+    assert(part.min[1]>=panel.min[1]-.05 && part.max[1]<=panel.max[1]+.02,
+      label+' falls outside cabinet vertically: '+JSON.stringify(part));
+    assert(part.min[2]>=panel.min[2]-.02 && part.max[2]<=panel.max[2]+.02,
+      label+' falls outside cabinet along its width: '+JSON.stringify(part));
   }
-  assert(physical.cooling.max[0]<physical.terminals.min[0],
-     'cooling controls and DIN terminal board must occupy distinct cabinet regions');
+  assert(physical.cooling.max[2]<physical.terminals.min[2]+.04,
+     'cooling controls and terminal rail must occupy separate zones inside cabinet');
   await page.evaluate(() => window.__atlasGeometryProbe.focus());
   await page.waitForTimeout(250);
   await page.screenshot({ path:'marshalling-cabinet-smoke.png', fullPage:true });
