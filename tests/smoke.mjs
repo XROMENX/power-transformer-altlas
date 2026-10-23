@@ -23,7 +23,7 @@ try {
   await page.route('**/app.js', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    const instrument = "\nwindow.__atlasGeometryProbe = {\n  inspect() {\n    const bounds = id => {\n      const box = new THREE.Box3().setFromObject(groups[id]);\n      return {min:box.min.toArray(), max:box.max.toArray(), meshes:groups[id].children.filter(o=>o.isMesh).length};\n    };\n    const plate = groups.aux.children.find(o=>o.isMesh\n      && Math.abs(o.geometry.parameters?.width - 1.54)<.0001\n      && Math.abs(o.geometry.parameters?.height - 1.44)<.0001);\n    if(!plate) throw new Error('Marshalling enclosure backplate missing');\n    return {\n      panel: (()=>{const b=new THREE.Box3().setFromObject(plate);return {min:b.min.toArray(),max:b.max.toArray()};})(), cabinetAtEnd: groups.aux.parent===groups.coolctrl.parent && groups.coolctrl.parent===groups.terminal.parent && Math.abs(groups.aux.parent.position.x+3.62)<.01,\n      cooling: bounds('coolctrl'),\n      terminals: bounds('terminal'),\n      hingedDoor: groups.aux.children.some(o=>o.isGroup && Math.abs(o.rotation.y)>1.5),\n      totalParts: parts.length\n    };\n  },\n  focus() {\n    camera.position.set(-9,2.8,0);\n    controls.target.set(-3.65,2.32,0);\n    controls.update();\n  },\n  point(id) {\n    const target = groups[id].children.find(o=>o.isMesh && Math.abs(o.geometry.parameters?.width-.185)<.0001);\n    if(!target) throw new Error('clickable equipment mesh missing: '+id);\n    const v = target.getWorldPosition(new THREE.Vector3()).project(camera);\n    const rect=host.getBoundingClientRect();\n    return {x:rect.left+(v.x+1)*rect.width*.5,y:rect.top+(1-v.y)*rect.height*.5};\n  }\n};"
+    const instrument = "\nwindow.__atlasGeometryProbe = {\n  inspect() {\n    const bounds = id => {\n      const box = new THREE.Box3().setFromObject(groups[id]);\n      return {min:box.min.toArray(), max:box.max.toArray(), meshes:groups[id].children.filter(o=>o.isMesh).length};\n    };\n    const plate = groups.aux.children.find(o=>o.isMesh\n      && Math.abs(o.geometry.parameters?.width - 1.54)<.0001\n      && Math.abs(o.geometry.parameters?.height - 1.44)<.0001);\n    if(!plate) throw new Error('Marshalling enclosure backplate missing');\n    return {\n      panel: (()=>{const b=new THREE.Box3().setFromObject(plate);return {min:b.min.toArray(),max:b.max.toArray()};})(), cabinetAtEnd: groups.aux.parent===groups.coolctrl.parent && groups.coolctrl.parent===groups.terminal.parent && Math.abs(groups.aux.parent.position.x+3.62)<.01,\n      cooling: bounds('coolctrl'),\n      terminals: bounds('terminal'),\n      hingedDoor: groups.aux.children.some(o=>o.isGroup && Math.abs(o.rotation.y)>1.5),\n      totalParts: parts.length\n    };\n  },\n  focus() {\n    camera.position.set(-9,2.8,0);\n    controls.target.set(-3.65,2.32,0);\n    controls.update();\n  },\n  point(id) {\n    const target = groups[id].children.find(o=>o.isMesh && Math.abs(o.geometry.parameters?.width-.185)<.0001);\n    if(!target) throw new Error('clickable equipment mesh missing: '+id);\n    const v = target.getWorldPosition(new THREE.Vector3()).project(camera);\n    const rect=host.getBoundingClientRect();\n    return {x:rect.left+(v.x+1)*rect.width*.5,y:rect.top+(1-v.y)*rect.height*.5};\n  }\n};\nwindow.__atlasEngineeringProbe = {\n  gaugeBounds() {\n    const bounds = id => {\n      const b = new THREE.Box3().setFromObject(groups[id]);\n      return {min:b.min.toArray(),max:b.max.toArray(),count:groups[id].children.filter(o=>o.isMesh).length};\n    };\n    return {\n      oti:bounds('oti'), wti:bounds('wti'),\n      radiator:bounds('cooling'), tank:bounds('tank')\n    };\n  },\n  jansen() {\n    const bounds = id=>{\n      const b=new THREE.Box3().setFromObject(groups[id]);\n      return {min:b.min.toArray(),max:b.max.toArray()};\n    };\n    return {\n      relay:bounds('osr'),\n      buchholz:bounds('buchholz'),\n      separateConservator:groups.oltcoil.children.some(o=>o.isMesh && o.position.y>5.5 && o.position.x>3),\n      modelParts:parts.length,\n      name:parts.find(p=>p.id==='osr')?.fa,\n      location:parts.find(p=>p.id==='osr')?.location\n    };\n  },\n  xrayVisualState() {\n    const selection = id=>meshes.filter(o=>o.userData.id===id);\n    const front=selection('tank').filter(o=>o.position.z>1.5);\n    const rear=selection('tank').filter(o=>o.position.z< -1.5);\n    const radiators=selection('cooling');\n    const windings=selection('highcoil');\n    return {\n      frontHidden:front.length>1&&front.every(o=>!o.visible),\n      rearTransparent:rear.length>0&&rear.every(o=>o.visible&&o.material.transparent&&!o.material.depthWrite&&o.material.opacity<.20),\n      radiatorsHidden:radiators.length>100&&radiators.every(o=>!o.visible),\n      windingsOpaque:windings.length>25&&windings.every(o=>o.visible&&!o.material.transparent),\n      coolingCount:radiators.length,\n      nearSkinCount:front.length,\n      wireVisible:selection('leads').some(o=>o.visible),\n      curtainOpacity:rear[0]?.material.opacity,\n      solidRestored:front.every(o=>o.visible)&&radiators.every(o=>o.visible),\n    };\n  },\n  endView(y=3.2,z=-.5) {\n    camera.position.set(10,5,0);\n    controls.target.set(3.32,y,z);\n    controls.update();\n  },\n  trace(pt) {\n    const el=document.elementFromPoint(pt.x,pt.y);\n    const first=hit({clientX:pt.x,clientY:pt.y});\n    return {pt, element:el?.tagName, elementId:el?.id,\n      elementClass:typeof el?.className==='string'?el.className:'',\n      hit:first?.object?.userData?.id, camera:camera.position.toArray(),\n      target:controls.target.toArray(), viewport:host.getBoundingClientRect().toJSON()};\n  },\n  point(id) {\n    const g=groups[id];\n    let target;\n    if(id==='oti'||id==='wti') target=g.children.find(o=>o.isMesh&&Math.abs(o.geometry.parameters?.radiusTop-.177)<.001);\n    else if(id==='osr') target=g.children.find(o=>o.isMesh&&Math.abs(o.geometry.parameters?.radiusTop-.16)<.001);\n    if(!target)throw new Error('Missing gauge/relay face: '+id);\n    const world=target.getWorldPosition(new THREE.Vector3());\n    if(id==='oti'||id==='wti')world.x+=.045;\n    const clip=world.project(camera);\n    const rect=host.getBoundingClientRect();\n    return {x:rect.left+(clip.x+1)*rect.width/2,y:rect.top+(1-clip.y)*rect.height/2};\n  }\n};\n";
     await route.fulfill({ response, body: source + '\n' + instrument });
   });
   page.on('pageerror', e => errors.push(e.stack || String(e)));
@@ -69,6 +69,57 @@ try {
   }
   await page.evaluate(() => { window.__atlasGeometryProbe.focus = undefined; });
   await page.unroute('**/app.js');
+  // Instruments must sit clear of the radiator bank on the accessible +X tank end.
+  const located = await page.evaluate(() => window.__atlasEngineeringProbe.gaugeBounds());
+  assert(located.oti.max[0]>3.58 && located.wti.max[0]>3.58,
+    'OTI/WTI dial faces must protrude beyond end-wall x=3.28: '+JSON.stringify(located));
+  assert(located.oti.count>10 && located.wti.count>10, 'dial face or ticks missing');
+  assert(located.oti.max[2] < located.wti.min[2],
+    'OTI and WTI dial faces intersect');
+  // Verify actual canvas raycast selection from the accessible tank end.
+  await page.evaluate(()=>window.__atlasEngineeringProbe.endView());
+  await page.waitForTimeout(300);
+  for (const [id,label] of [['oti','نشانگر دمای روغن'],['wti','نشانگر دمای سیم‌پیچ']]) {
+    const point=await page.evaluate(id=>window.__atlasEngineeringProbe.point(id),id);
+    const trace=await page.evaluate(pt=>window.__atlasEngineeringProbe.trace(pt),point);
+    console.log('GAUGE_RAYCAST',id,JSON.stringify(trace));
+    await page.mouse.click(point.x,point.y);
+    assert(await page.locator('#detail').evaluate(el=>el.open),'end-wall gauge not clickable: '+id+' '+JSON.stringify(trace));
+    assert((await page.locator('#detailContent').innerText()).includes(label),'wrong dial selected: '+id);
+    await page.locator('#close').click();
+  }
+  const jansen=await page.evaluate(()=>window.__atlasEngineeringProbe.jansen());
+  assert(jansen.separateConservator,'OLTC isolated conservator section missing');
+  assert(jansen.name.includes('جانسون')&&jansen.location.includes('R'),'missing Jansen relay technical information');
+  assert(jansen.relay.min[0]>2.5 && jansen.relay.min[1]>4.1,'Jansen relay is not near the OLTC head');
+  assert(Math.abs(jansen.relay.max[2]-jansen.buchholz.max[2])>.4,'Jansen relay tied to main Buchholz piping');
+  await page.locator('#search').fill('جانسون');
+  assert.equal(await page.locator('#parts button.part').count(),1,'Persian Jansen relay discovery');
+  await page.locator('#search').fill('');
+  await page.evaluate(()=>window.__atlasEngineeringProbe.endView(4.9,-.35));
+  await page.waitForTimeout(250);
+  const jpoint=await page.evaluate(()=>window.__atlasEngineeringProbe.point('osr'));
+  await page.mouse.click(jpoint.x,jpoint.y);
+  assert(await page.locator('#detail').evaluate(el=>el.open),'Jansen 3D relay not clickable');
+  assert((await page.locator('#detailContent').innerText()).includes('جانسون'),'Jansen modal showed wrong part');
+  await page.locator('#close').click();
+  await page.screenshot({path:'end-wall-gauges-jansen.png',fullPage:true});
+  // Regression: X-ray MUST expose the actual windings, hide the near tank wall,
+  // remove dense fins, retain internal leads, and restore parts on Solid mode.
+  await page.locator('[data-mode="xray"]').click();
+  const inspected=await page.evaluate(()=>window.__atlasEngineeringProbe.xrayVisualState());
+  assert(inspected.frontHidden,'X-ray leaves the near-side metal tank wall visible');
+  assert(inspected.radiatorsHidden,'X-ray leaves radiator fins blocking the transformer');
+  assert(inspected.rearTransparent,'X-ray opacity/depth-write incorrect: '+JSON.stringify(inspected));
+  assert(inspected.windingsOpaque&&inspected.wireVisible,'X-ray hides or fades winding/core internals');
+  await page.locator('#opacity').evaluate(el=>{el.value='99';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  const veryClear=await page.evaluate(()=>window.__atlasEngineeringProbe.xrayVisualState());
+  assert(veryClear.curtainOpacity<inspected.curtainOpacity,'X-ray transparency slider did not change shell opacity');
+  await page.screenshot({path:'xray-internals.png',fullPage:true});
+  await page.locator('[data-mode="solid"]').click();
+  const restored=await page.evaluate(()=>window.__atlasEngineeringProbe.xrayVisualState());
+  assert(restored.solidRestored,'switching back to Solid does not restore radiator and tank geometry');
+  await page.locator('#opacity').evaluate(el=>{el.value='85';el.dispatchEvent(new Event('input',{bubbles:true}));});
   // Test all 41 detail dialogs and return to the full parts list.
   for (let i = 0; i < 41; i++) {
     await page.locator('#parts button.part').nth(i).click();
