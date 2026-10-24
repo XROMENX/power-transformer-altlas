@@ -19,7 +19,7 @@ const groups={},meshes=[],shell=[],guides=[];let explosion=0,mode='solid',select
 const EXPLODE_SPREAD=2.25;
 // X-ray hides complete exterior cooling assemblies, not just the tagged meshes.
 const XRAY_HIDDEN_GROUPS=new Set(['tank','lid','cooling','headers','pumps','valves']);
-const motion={tank:[0,-.4,2.7],lid:[0,3.5,0],hv:[0,4.3,-.7],lv:[0,3.7,1.2],core:[-.65,-.7,-.45],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,3.8,0],cooling:[0,.25,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[.8,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[1.3,1,-.7],wti:[1.3,1,.5],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
+const motion={tank:[0,-4,0],lid:[0,6.5,0],hv:[0,7.5,-.7],lv:[0,7,1.2],core:[0,-.7,0],lowcoil:[0,1.4,0],highcoil:[0,2.8,0],insulation:[0,2.1,0],leads:[0,6,0],cooling:[0,.25,0],conservator:[0,4,-.5],buchholz:[0,3,-.5],oltc:[3.5,.5,0],aux:[.8,0,3.5],breather:[-2,0,-2],prv:[1,4,1],oti:[1.3,1,-.7],wti:[1.3,1,.5],ct:[0,2.4,0],valves:[0,0,2],earth:[-1,0,1]};
 Object.assign(motion,{"mog":[2,3,-1],"spr":[-2,3,1],"osr":[1.1,3,-.3],"drive":[4,0,1],"selector":[3,2,0],"oltcoil":[4,1,0],"bladder":[0,4,-2],"sample":[2,-1,2],"drain":[-2,-1,2],"neutral":[3,4,1],"headers":[0,0,3],"pumps":[3,-1,3],"coolctrl":[.45,.12,4.1],"terminal":[1.2,-.12,4.5],"coreearth":[-3,-1,0],"clamps":[0,2,0],"wrings":[0,3,0],"shields":[0,4,0],"lifting":[0,3,2],"plates":[2,0,3]});
 parts.forEach(p=>{let g=new THREE.Group();g.userData.id=p.id;g.userData.manualVisible=true;g.userData.vector=new THREE.Vector3(...(motion[p.id]??[0,0,0]));groups[p.id]=g;scene.add(g);});
 function mesh(geo,m,pos,g){const o=new THREE.Mesh(geo,m.clone());o.position.set(...pos);o.castShadow=true;o.receiveShadow=true;g.add(o);o.userData.id=g.userData.id;meshes.push(o);if(['tank','lid'].includes(o.userData.id))shell.push(o);return o;}
@@ -194,6 +194,30 @@ for(const id of ['aux','coolctrl','terminal']){
   marshallingMount.add(enclosureGroup);
 }
 
+// Paired upper/lower hardware cannot share an upward explosion vector:
+// the lower members would sweep through the winding discs. Store local rest
+// positions once and give each member its own absolute travel direction.
+const splitMotion=[];
+for(const id of ['core','clamps','wrings','insulation','lifting','tank','headers','pumps','valves']) {
+  for(const o of groups[id].children) {
+    if(!o.isMesh)continue;
+    const y=o.position.y;
+    let travel;
+    if(id==='tank') {if(y<3.8)continue;travel=[0,6.5,0];}
+    if(['headers','pumps','valves'].includes(id)) {
+      o.geometry.computeBoundingBox();
+      const center=o.geometry.boundingBox.getCenter(new THREE.Vector3()).add(o.position);
+      travel=[0,0,Math.sign(center.z)*2.8];
+    }
+    if(id==='core') travel=y>3 ? [0,3.3,0] : [0,-.7,0];
+    if(id==='clamps') travel=y>2 ? [0,3.6,0] : [0,-1.2,0];
+    if(id==='wrings') travel=y>2 ? [0,3.9,0] : [0,-.8,0];
+    if(id==='insulation') travel=y<1.3 ? [0,-.5,0] : y>3 ? [0,3.4,0] : [0,2.1,0];
+    if(id==='lifting') travel=y>2 ? [0,6.8,0] : [0,-4.3,0];
+    splitMotion.push({mesh:o,rest:o.position.clone(),travel:new THREE.Vector3(...travel)});
+  }
+}
+
 // Ground reference, fine engineering grid and orientation ring.
 const floor=new THREE.Mesh(new THREE.CircleGeometry(12,96),new THREE.MeshStandardMaterial({color:0x23312c,roughness:.92,transparent:true,opacity:.55}));floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const grid=new THREE.GridHelper(22,44,0x46584c,0x34463c);grid.position.y=-.06;grid.material.transparent=true;grid.material.opacity=.3;scene.add(grid);
@@ -218,11 +242,14 @@ function update(){
   for(const g of Object.values(groups)){
     g.visible=g.userData.manualVisible!==false&&!(xray&&XRAY_HIDDEN_GROUPS.has(g.userData.id));
     g.position.copy(g.userData.rest||new THREE.Vector3()).addScaledVector(g.userData.vector,explosion*EXPLODE_SPREAD);
-    if(g.userData.id==='highcoil')for(const o of g.children){
-      if(o.userData.baseX===undefined)o.userData.baseX=o.position.x;
-      o.position.x=o.userData.baseX+(o.userData.baseX+.35)*explosion*1.2;
-    }
   }
+  for(const {mesh:o,rest,travel} of splitMotion){
+    o.position.copy(rest).addScaledVector(travel,explosion*EXPLODE_SPREAD)
+      .addScaledVector(o.parent.userData.vector,-explosion*EXPLODE_SPREAD);
+  }
+  // Keep winding axes fixed: lateral spreading while the nested cylinders
+  // still overlap vertically makes one phase cut through its neighbour.
+  floor.visible=explosion===0;
   groups.cooling.children.forEach(b=>b.position.copy(b.userData.offset).multiplyScalar(explosion*EXPLODE_SPREAD));
   // Fans pull away from their radiator banks in exploded view; restore on reset.
   for(const o of meshes)if(o.userData.isFan===true){
@@ -243,7 +270,7 @@ function update(){
 function select(id){selected=id;const p=parts.find(p=>p.id===id);document.querySelectorAll('.part').forEach(el=>el.classList.toggle('selected',el.dataset.id===id));meshes.forEach(o=>{o.material.emissive.set(o.userData.id===id?0x4b632e:0x000000);o.material.emissiveIntensity=.3;});$('detailContent').innerHTML=`<span class="detail-tag">${p.category}</span><h2>${p.fa}</h2><div class="en">${p.en.toUpperCase()}</div><p>${p.description}</p><div class="detail-actions"><button id="isolate">نمایش فقط این مجموعه</button><button id="showAll">نمایش همه قطعات</button></div><h3>جایگاه در مجموعه</h3><p>${p.location}</p><h3>وضعیت عادی و مبنای مقایسه</h3><p>${p.normal}</p><h3>نقاط توجه در نگهداری</h3><p>${p.inspection}</p><h3>نشانه‌های قابل بررسی</h3><p>${p.faults}</p><h3>بررسی تکمیلی و تفسیر</h3><p>${p.diagnosis}</p><h3>اقدام پس از مشاهده عیب</h3><p>${p.response}</p><h3>اطلاعات قابل ثبت</h3><p>${p.record}</p><p class="note">این مدل، مرجع آموزشی است. بازکردن، آزمون و هرگونه مداخله فقط توسط افراد مجاز، پس از ایزولاسیون، قفل‌گذاری، تأیید بی‌برقی و زمین‌کردن طبق دستورالعمل سایت انجام شود. حدود مجاز و دوره‌های سرویس را از سازنده بگیرید.</p><div class="manual-ref"><strong>مرجع این قطعه</strong><p>${p.manual[0]?`Raychem RPG · بخش ${p.manual[1]} · صفحه چاپی ${fa(p.manual[0])}<br><a href="reference-manual.pdf#page=${p.manual[0]+1}" target="_blank" rel="noopener">باز کردن صفحه مرجع ↗</a>`:p.manual[1]}</p></div><details><summary>منابع فنی و محدوده مدل</summary><p>این راهنما مرجع عمومی نصب و نگهداری است، نه نقشه ابعادی ترانس ۲۳۰/۱۳۲. حدود عددی آزمون، گشتاور و زمان‌ها به این مدل تعمیم داده نشده‌اند. مدل سه‌فاز دو سیم‌پیچه است؛ گروه برداری، توان نامی و ابعاد سازنده مشخص نشده‌اند. تعداد دورها، مسیر هادی‌ها و فاصله‌های عایقی شماتیک‌اند.</p><p><a href="https://www.usbr.gov/tsc/techreferences/mands/mands-pdfs/Trnsfrmr.pdf" target="_blank" rel="noopener">US Bureau of Reclamation — Transformer diagnostics</a><br><a href="https://www.reinhausen.com/fileadmin/downloadcenter/products/protective_devices/safety_relays/rs2001/rs/bal_1800059_11_001_en.pdf" target="_blank" rel="noopener">Reinhausen — RS protective relay instructions</a><br><a href="https://www.hitachienergy.com/products-and-solutions/transformers/transformer-service/upgrade-repair-and-extend/transformer-refurbishment" target="_blank" rel="noopener">Hitachi Energy — Transformer components & service</a><br><a href="https://www.reinhausen.com/servicedetail/oltc-services/maintenance-and-inspection" target="_blank" rel="noopener">Reinhausen — OLTC maintenance</a></p></details>`;$('isolate').onclick=()=>{Object.entries(groups).forEach(([key,g])=>g.userData.manualVisible=key===id);update();list();$('detail').close();};$('showAll').onclick=()=>{Object.values(groups).forEach(g=>g.userData.manualVisible=true);update();list();$('detail').close();};if(!$('detail').open)$('detail').showModal();}
 function list(){let q=$('search').value.trim().toLowerCase();$('parts').innerHTML='';parts.filter(p=>(p.fa+' '+p.en).toLowerCase().includes(q)).forEach(p=>{let row=document.createElement('div');row.className='part';row.dataset.id=p.id;let btn=document.createElement('button');btn.className='part';btn.style.margin='0';btn.innerHTML=`<span class="num">${String(parts.indexOf(p)+1).padStart(2,'0')}</span><span class="names"><strong>${p.fa}</strong><small>${p.en}</small></span>`;btn.onclick=()=>select(p.id);let eye=document.createElement('button');eye.className='eye';eye.textContent=groups[p.id].userData.manualVisible?'◉':'○';eye.title='نمایش / پنهان کردن '+p.fa;eye.setAttribute('aria-label',eye.title);eye.setAttribute('aria-pressed',groups[p.id].userData.manualVisible);eye.onclick=()=>{groups[p.id].userData.manualVisible=!groups[p.id].userData.manualVisible;update();list();};row.append(btn,eye);$('parts').append(row);});if(!$('parts').children.length)$('parts').innerHTML='<p class="empty">قطعه‌ای یافت نشد.</p>';}
 $('search').oninput=list;list();$('close').onclick=()=>$('detail').close();$('detail').addEventListener('close',()=>{meshes.forEach(o=>o.material.emissive.set(0));});document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){let b=d.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)d.close();}}));
-$('explode').oninput=e=>{const old=explosion;explosion=+e.target.value/100;if(controls){const offset=camera.position.clone().sub(controls.target);offset.multiplyScalar((1+explosion*.85)/(1+old*.85));controls.target.y=3+explosion*3.2;camera.position.copy(controls.target).add(offset);}update();};
+$('explode').oninput=e=>{const old=explosion;explosion=+e.target.value/100;if(controls){const offset=camera.position.clone().sub(controls.target);offset.multiplyScalar((1+explosion*1.6)/(1+old*1.6));controls.target.y=3+explosion*3.2;camera.position.copy(controls.target).add(offset);}update();};
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));$('modeLabel').textContent={solid:'ASSEMBLED VIEW',xray:'X-RAY VIEW',cut:'CUTAWAY VIEW'}[mode];update();});
 function view(pos){if(!controls)return;camera.position.set(...pos);controls.target.set(0,3,0);controls.update();} $('home').onclick=()=>{explosion=0;$('explode').value=0;Object.values(groups).forEach(g=>g.userData.manualVisible=true);update();list();view([13,9,15]);controls&&(controls.autoRotate=false);$('rotate').classList.remove('active');};$('back').onclick=()=>view([-12,8,-14]);$('top').onclick=()=>view([0,20,.01]);$('rotate').onclick=()=>{if(controls){controls.autoRotate=!controls.autoRotate;$('rotate').classList.toggle('active',controls.autoRotate);}};$('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('.workspace').requestFullscreen();}catch(e){$('full').title='تمام صفحه در این مرورگر پشتیبانی نمی‌شود';}};
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();function hit(e){const rect=host.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);ray.setFromCamera(pointer,camera);return ray.intersectObjects(meshes,false).find(h=>{let o=h.object;while(o){if(!o.visible)return false;o=o.parent;}return !(mode==='xray'&&XRAY_HIDDEN_GROUPS.has(h.object.userData.id))&&!(mode==='cut'&&h.object.material.clippingPlanes.length&&h.point.z>0);});}
@@ -251,6 +278,5 @@ if(renderer){let down=null;renderer.domElement.addEventListener('pointerdown',e=
 let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});$('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else $('installHelp').showModal();};if('serviceWorker'in navigator){
   let reloading=false;
   if(navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloading){reloading=true;location.reload();}});
-  navigator.serviceWorker.register('./sw.js?v=11',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=12',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
 }update();
-
