@@ -31,7 +31,7 @@ try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
   await page.waitForSelector('#viewport canvas', { timeout: 35000 });
   assert.equal(await page.locator('#parts button.part').count(), 41, 'parts list failed to initialize');
-  assert.equal(await page.locator('#buildVersion').innerText(), 'v11', 'stale app version is displayed');
+  assert.equal(await page.locator('#buildVersion').innerText(), 'v12', 'stale app version is displayed');
   const credit = page.locator('footer.site-credit');
   assert.equal(await credit.count(),1,'project credit footer missing');
   assert((await credit.innerText()).includes('سید حمیدرضا ملک نیا'),'credit name mismatch');
@@ -196,4 +196,3 @@ try {
 } finally {
   await browser.close();
 }
-

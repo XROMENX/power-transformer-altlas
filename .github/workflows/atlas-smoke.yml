@@ -27,6 +27,7 @@ jobs:
         run: |
           node --check app.js
           node --check data.js
+          node tests/explosion.mjs
           node tests/smoke.mjs
       - name: Upload 3D preview
         if: always()
