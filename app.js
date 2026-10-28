@@ -44,12 +44,18 @@ function bushing(x,z,h,g){cyl(.26,.15,x,4.1,z,silver,g);for(let a=0;a<6;a++){let
 for(let x of [-2.1,-.35,1.4]){bushing(x,-.9,1.8,groups.hv);bushing(x,.9,1.25,groups.lv);}
 // Radiator banks with separate fins, headers, guard rings, and fan blades.
 g=groups.cooling;for(let side of [-1,1]){let bank=new THREE.Group();bank.userData.id='cooling';bank.userData.offset=new THREE.Vector3(0,0,side*2.8);g.add(bank);for(let x=-2.75;x<2.8;x+=.19){box(.055,2.25,.72,x,2.17,side*2.25,steel,bank);box(.085,.09,.68,x,3.3,side*2.25,edge,bank);box(.085,.09,.68,x,1.03,side*2.25,edge,bank);}for(let y of [1.03,3.3]){pipe([[-2.8,y,side*2.25],[2.8,y,side*2.25]],.105,steel,bank);for(let x of [-2.7,2.7])pipe([[x,y,side*1.55],[x,y,side*2.25]],.095,steel,bank);}for(let x of [-1.9,0,1.9]){const fanStart=meshes.length;let z=side*2.73;let o=cyl(.48,.16,x,1.75,z,dark,bank);o.rotation.x=Math.PI/2;for(let rad of [.15,.28,.4,.49]){let q=torus(rad,.012,x,1.75,z+side*.11,silver,bank);q.rotation.x=0;}for(let a=0;a<8;a++){let blade=box(.035,.96,.02,x,1.75,z+side*.12,silver,bank);blade.rotation.z=a*Math.PI/4;}let hub=cyl(.12,.22,x,1.75,z,steel,bank);hub.rotation.x=Math.PI/2;for(let a=0;a<5;a++){let t=a*Math.PI*2/5;let b=box(.15,.29,.04,x+Math.sin(t)*.23,1.75+Math.cos(t)*.23,z,copper2,bank);b.rotation.z=-t+.5;}for(const fanMesh of meshes.slice(fanStart))fanMesh.userData.isFan=true;}}
-// Conservator positioned above rear edge with a continuous Buchholz oil path.
+// Conservator geometry uses a shared local frame, mounted at the right tank end below.
 g=groups.conservator;let con=cyl(.48,4.9,-.1,5.65,-1.72,steel,g);con.rotation.z=Math.PI/2;for(let x of [-2.55,2.35]){let end=cyl(.49,.06,x,5.65,-1.72,edge,g);end.rotation.z=Math.PI/2;}
 // A single conservator shell can contain two OIL-ISOLATED chambers. The OLTC
 // compartment occupies the right end; no second external reservoir is drawn.
 let separator=cyl(.46,.045,1.88,5.65,-1.72,dark,g);separator.rotation.z=Math.PI/2;
-let chamberBand=torus(.49,.032,1.88,5.65,-1.72,copper,g);chamberBand.rotation.set(0,Math.PI/2,0);for(let x of [-1.8,1.6]){box(.12,1.4,.14,x,4.65,-1.72,dark,g);let t=torus(.49,.025,x,5.65,-1.72,silver,g);t.rotation.y=Math.PI/2;t.rotation.x=0;}let gauge=cyl(.17,.07,2.4,5.65,-1.72,black,g);gauge.rotation.z=Math.PI/2;pipe([[2,4.05,-1.72],[2,4.8,-1.72],[-1.8,5.07,-1.72],[-1.8,5.19,-1.72]],.075,steel,g);
+let chamberBand=torus(.49,.032,1.88,5.65,-1.72,copper,g);chamberBand.rotation.set(0,Math.PI/2,0);for(let x of [-1.8,1.6]){box(.12,1.4,.14,x,4.65,-1.72,dark,g);let t=torus(.49,.025,x,5.65,-1.72,silver,g);t.rotation.y=Math.PI/2;t.rotation.x=0;}let gauge=cyl(.17,.07,2.4,5.65,-1.72,black,g);gauge.rotation.z=Math.PI/2;// Main-oil inlet starts on the cover; the inclined run passes through Buchholz.
+pipe([[-.7,4.05,-2.97],[1.5,4.65,-2.97],[2,4.8,-1.72],[-1.8,5.07,-1.72],[-1.8,5.19,-1.72]],.075,steel,g);
+// Cantilever feet and diagonal braces carry the vessel back to the tank cover.
+for(let x of [-1.8,1.6]){
+  box(.32,.12,1.2,x,4.1,-2.22,dark,g);
+  pipe([[x,4.16,-2.77],[x,5.13,-1.72]],.055,dark,g);
+}
 g=groups.buchholz;box(.45,.42,.28,.3,4.92,-1.72,blue,g);for(let x of [.04,.56]){let f=cyl(.19,.04,x,4.92,-1.72,silver,g);f.rotation.z=Math.PI/2;}let sight=cyl(.09,.03,.3,4.99,-1.56,black,g);sight.rotation.x=Math.PI/2;box(.65,.035,.5,.3,5.27,-1.72,steel,g);for(let x of [.05,.55])box(.02,.3,.02,x,5.12,-1.9,silver,g);cyl(.035,.12,.3,5.18,-1.72,copper,g);
 for(let x of [-.5,1.1]){let v=cyl(.15,.18,x,4.94,-1.72,dark,g);v.rotation.z=Math.PI/2;cyl(.025,.22,x,5.1,-1.72,silver,g);torus(.12,.018,x,5.22,-1.72,dark,g);}
 g=groups.oltc;cyl(.35,2.6,2.72,2.42,0,dark,g);for(let y of [1.2,2.2,3.5])torus(.36,.03,2.72,y,0,silver,g);cyl(.44,.14,2.72,4.12,0,steel,g);box(.7,.9,.35,3.55,2.2,.1,steel,g);box(.5,.65,.02,3.55,2.2,.29,dark,g);box(.25,.13,.025,3.55,2.4,.31,black,g);pipe([[2.72,4.2,0],[3.55,4.2,0],[3.55,2.7,0]],.035,silver,g);
@@ -114,15 +120,15 @@ accessory('spr',-2.5,3.97,-.2,.16);
 // within the single shared conservator vessel (not a separate external tank).
 // The normal tank Buchholz relay remains in the independent main-oil circuit.
 g=groups.osr;
-pipe([[2.72,4.20,0],[2.78,4.64,-.22],[2.86,4.92,-.35]],.08,steel,g);
-let jbody=cyl(.16,.52,3.13,4.94,-.35,steel,g);jbody.rotation.z=Math.PI/2;
-for(let x of [2.85,3.41]){let flange=cyl(.22,.065,x,4.94,-.35,silver,g);flange.rotation.z=Math.PI/2;}
-box(.35,.28,.33,3.13,5.13,-.35,blue,g);
-box(.28,.18,.06,3.13,5.16,-.155,dark,g); // relay inspection/window face
-let viewport=cyl(.095,.024,3.13,5.16,-.116,silver,g);viewport.rotation.x=Math.PI/2;
-let glass=cyl(.072,.026,3.13,5.16,-.098,black,g);glass.rotation.x=Math.PI/2;
-box(.15,.12,.18,3.13,5.34,-.35,dark,g); // dry-contact terminal housing
-pipe([[3.41,4.94,-.35],[3.63,4.96,-.35],[3.63,5.20,-.35],[3.63,5.65,-.35],[3.63,5.90,-1.72],[2.28,5.90,-1.72],[2.28,5.65,-1.72]],.077,steel,g); // OLTC chamber nozzle on shared shell
+pipe([[2.72,4.20,0],[3.25,4.50,-1.5],[3.76,4.92,-1.5]],.08,steel,g);
+let jbody=cyl(.16,.52,4.03,4.94,-1.5,steel,g);jbody.rotation.z=Math.PI/2;
+for(let x of [3.75,4.31]){let flange=cyl(.22,.065,x,4.94,-1.5,silver,g);flange.rotation.z=Math.PI/2;}
+box(.35,.28,.33,4.03,5.13,-1.5,blue,g);
+box(.28,.18,.06,4.03,5.16,-1.305,dark,g);
+let viewport=cyl(.095,.024,4.03,5.16,-1.266,silver,g);viewport.rotation.x=Math.PI/2;
+let glass=cyl(.072,.026,4.03,5.16,-1.248,black,g);glass.rotation.x=Math.PI/2;
+box(.15,.12,.18,4.03,5.34,-1.5,dark,g);
+pipe([[4.31,4.94,-1.5],[4.65,5.04,-1.5],[4.65,5.45,-2.38],[4.15,5.65,-2.38]],.077,steel,g); // isolated OLTC chamber nozzle
 
 g=groups.drive;box(.62,.82,.32,3.67,2.2,.6,steel,g);box(.4,.12,.04,3.67,2.42,.78,blue,g);cyl(.13,.25,3.67,1.78,.6,dark,g);
 g=groups.selector;for(let y of [1.55,1.9,2.25,2.6,2.95]){torus(.26,.025,2.72,y,0,copper,g);box(.35,.045,.06,2.72,y,.25,silver,g);}
@@ -179,6 +185,20 @@ g=groups.shields;for(let x of [-2.1,-.35,1.4])ring(.81,.76,.045,x,3.31,0,silver,
 g=groups.lifting;for(let x of [-2.65,2.65])for(let z of [-1.15,1.15]){let t=torus(.16,.045,x,4.2,z,steel,g);t.rotation.x=0;box(.3,.1,.3,x,.38,z,steel,g);}
 g=groups.plates;box(.68,.42,.025,1.8,2.1,1.73,silver,g);for(let y of [1.98,2.09,2.2])box(.48,.012,.028,1.8,y,1.75,dark,g);
 
+
+// Rotate the entire conservator assembly onto the +X (right-hand) tank end.
+// Separate selectable groups share one frame, including the bladder and breather.
+// Rest positions are retained by update(), including after explode/reset.
+const conservatorMount=new THREE.Group();
+conservatorMount.position.set(4.15,0,0);
+conservatorMount.rotation.y=Math.PI/2;
+scene.add(conservatorMount);
+for(const id of ['conservator','buchholz','breather','mog','bladder']){
+  const group=groups[id];
+  group.userData.rest=new THREE.Vector3(.1,0,1.72);
+  group.position.copy(group.userData.rest);
+  conservatorMount.add(group);
+}
 
 // Place the marshalling cabinet on the accessible END wall rather than
 // behind the radiator bank. All three separately selectable groups share
@@ -278,5 +298,5 @@ if(renderer){let down=null;renderer.domElement.addEventListener('pointerdown',e=
 let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});$('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else $('installHelp').showModal();};if('serviceWorker'in navigator){
   let reloading=false;
   if(navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloading){reloading=true;location.reload();}});
-  navigator.serviceWorker.register('./sw.js?v=12',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=13',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
 }update();
