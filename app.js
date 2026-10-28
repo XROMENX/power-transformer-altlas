@@ -199,6 +199,17 @@ for(const id of ['conservator','buchholz','breather','mog','bladder']){
   group.position.copy(group.userData.rest);
   conservatorMount.add(group);
 }
+// Explosion vectors are world-space directions. Convert them into the rotated
+// mounting frame, and spread the right-end accessories away from the bushings.
+const conservatorTravel={
+  conservator:[2,4,0], buchholz:[3,2,1], breather:[3,0,2],
+  mog:[3,3,-2], bladder:[1,6,0]
+};
+const inverseMountRotation=conservatorMount.quaternion.clone().invert();
+for(const [id,travel] of Object.entries(conservatorTravel)){
+  groups[id].userData.vector.set(...travel).applyQuaternion(inverseMountRotation);
+}
+groups.osr.userData.vector.set(3,2,-2);
 
 // Place the marshalling cabinet on the accessible END wall rather than
 // behind the radiator bank. All three separately selectable groups share
@@ -298,5 +309,5 @@ if(renderer){let down=null;renderer.domElement.addEventListener('pointerdown',e=
 let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});$('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else $('installHelp').showModal();};if('serviceWorker'in navigator){
   let reloading=false;
   if(navigator.serviceWorker.controller)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloading){reloading=true;location.reload();}});
-  navigator.serviceWorker.register('./sw.js?v=13',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=14',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
 }update();
